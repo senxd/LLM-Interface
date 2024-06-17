@@ -6,8 +6,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import net.prismclient.DocumentMarker
-import net.prismclient.Logger
 import net.prismclient.document.Document
 import net.prismclient.util.localResource
 import net.sourceforge.tess4j.Tesseract
@@ -53,19 +51,19 @@ class PDF(val pdfLocation: File) : Document() {
         extractionMethod: PDFExtractionMethod = PDFExtractionMethod.Text,
         extractionQuality: PDFExtractionQuality = PDFExtractionQuality.Balanced
     ): String {
-        Logger.debug(
-            "Extracting text from PDF {} using method {} with quality {}",
-            name,
-            extractionMethod,
-            extractionQuality
-        )
+//        Logger.debug(
+//            "Extracting text from PDF {} using method {} with quality {}",
+//            name,
+//            extractionMethod,
+//            extractionQuality
+//        )
 
         if (extractionMethod == PDFExtractionMethod.Text) {
             val extractedText = Loader.loadPDF(pdfLocation).use { document ->
                 PDFTextStripper().getText(document)
             }
             if (extractedText.trim().isNotEmpty()) {
-                Logger.debug(DocumentMarker, "Extracted text from PDF {} using Text method ", name)
+//                Logger.debug(DocumentMarker, "Extracted text from PDF {} using Text method ", name)
                 return extractedText
             }
         }
@@ -82,16 +80,16 @@ class PDF(val pdfLocation: File) : Document() {
                 images.mapIndexed { i, image ->
                     async(Dispatchers.Default) {
                         semaphore.withPermit {
-                            Logger.debug(DocumentMarker, "Parsing page {}/{} of {}", batchStart + i, totalPages, name)
+//                            Logger.debu/**/g(DocumentMarker, "Parsing page {}/{} of {}", batchStart + i, totalPages, name)
                             extractedText.append(Tesseract().performOCR(image))
-                            Logger.debug(DocumentMarker, "Parsed page {}/{} of {}", batchStart + i, totalPages, name)
+//                            Logger.debug(DocumentMarker, "Parsed page {}/{} of {}", batchStart + i, totalPages, name)
                         }
                     }
                 }.awaitAll()
             }
         }
 
-        Logger.debug(DocumentMarker, "Extracted text from PDF {} using Image method ", pdfLocation.nameWithoutExtension)
+//        Logger.debug(DocumentMarker, "Extracted text from PDF {} using Image method ", pdfLocation.nameWithoutExtension)
 
         return extractedText.toString()
     }
@@ -105,9 +103,9 @@ class PDF(val pdfLocation: File) : Document() {
             val pdfRenderer = PDFRenderer(document)
             for (page in pages) {
                 if (page < document.numberOfPages) {
-                    Logger.debug(DocumentMarker, "Rendering page {} for pdf {}", page, name)
+//                    Logger.debug(DocumentMarker, "Rendering page {} for pdf {}", page, name)
                     it.add(pdfRenderer.renderImageWithDPI(page, extractionQuality.dpi.toFloat()))
-                    Logger.debug(DocumentMarker, "Rendered page {} for pdf {}", page, name)
+//                    Logger.debug(DocumentMarker, "Rendered page {} for pdf {}", page, name)
                 }
             }
         }

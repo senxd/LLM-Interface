@@ -1,7 +1,5 @@
 package net.prismclient.model
 
-import net.prismclient.FunctionMarker
-import net.prismclient.Logger
 import net.prismclient.feature.api.API
 import net.prismclient.feature.api.openai.OpenAITool
 import net.prismclient.payload.MessagePayload
@@ -153,21 +151,21 @@ class OpenAIModel(openAIModelName: String, val apiKey: String) :
         // Call the internal lambda function of the
         // APIFunction with the mapped parameters.
         val r = mappedFunction.response(mappedParameters)
-        Logger.debug(
-            FunctionMarker,
-            "Invoked function {} from API {} with parameters",
-            mappedFunction.functionName,
-            api::class.java.name
-        )
-        mappedParameters.forEach {
-            Logger.debug(
-                FunctionMarker,
-                "\t\"{}\" : \"{}\" of type {}",
-                it.parameterName,
-                it.parameterValue,
-                it.parameterValue!!::class.java.simpleName
-            )
-        }
+//        Logger.debug(
+//            FunctionMarker,
+//            "Invoked function {} from API {} with parameters",
+//            mappedFunction.functionName,
+//            api::class.java.name
+//        )
+//        mappedParameters.forEach {
+//            Logger.debug(
+//                FunctionMarker,
+//                "\t\"{}\" : \"{}\" of type {}",
+//                it.parameterName,
+//                it.parameterValue,
+//                it.parameterValue!!::class.java.simpleName
+//            )
+//        }
 
         // Given the function response, add a new message based
         // on the response and send it back to the LLM
@@ -185,7 +183,8 @@ class OpenAIModel(openAIModelName: String, val apiKey: String) :
     private fun call(request: Request, callback: (response: Response) -> Unit) {
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Logger.warn(e)
+                e.printStackTrace()
+//                Logger.warn(e)
             }
 
             override fun onResponse(call: Call, response: Response) {

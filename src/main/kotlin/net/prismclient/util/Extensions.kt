@@ -1,12 +1,10 @@
 package net.prismclient.util
 
-import net.prismclient.DocumentMarker
-import net.prismclient.Logger
-import net.prismclient.document.Document
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
+import net.prismclient.document.Document
 import java.io.File
 
 /**

@@ -1,7 +1,6 @@
 package net.prismclient.feature.api.openai
 
 import net.prismclient.feature.api.APIFunction
-import net.prismclient.feature.api.APIParameter
 import net.prismclient.feature.api.Function
 import net.prismclient.feature.api.Parameter
 

@@ -1,8 +1,6 @@
 @file:Suppress("UNCHECKED_CAST")
 package net.prismclient.feature.api
 
-import net.prismclient.FunctionMarker
-import net.prismclient.Logger
 import net.prismclient.util.Copyable
 
 /**
@@ -40,7 +38,7 @@ class APIFunction<R>(
     val response: (MutableList<APIParameter<*>>) -> R
 ) {
     init {
-        Logger.debug(FunctionMarker, "Created API function $functionName")
+//        Logger.debug(FunctionMarker, "Created API function $functionName")
     }
 }
 
