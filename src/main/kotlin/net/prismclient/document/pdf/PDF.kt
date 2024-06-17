@@ -80,7 +80,7 @@ class PDF(val pdfLocation: File) : Document() {
                 images.mapIndexed { i, image ->
                     async(Dispatchers.Default) {
                         semaphore.withPermit {
-//                            Logger.debu/**/g(DocumentMarker, "Parsing page {}/{} of {}", batchStart + i, totalPages, name)
+//                            Logger.debug(DocumentMarker, "Parsing page {}/{} of {}", batchStart + i, totalPages, name)
                             extractedText.append(Tesseract().performOCR(image))
 //                            Logger.debug(DocumentMarker, "Parsed page {}/{} of {}", batchStart + i, totalPages, name)
                         }
