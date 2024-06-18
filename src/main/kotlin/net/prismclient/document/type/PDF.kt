@@ -54,19 +54,11 @@ class PDF(pdfLocation: File) : Document(pdfLocation, "pdf") {
         extractionMethod: ExtractionMethod = ExtractionMethod.Text,
         extractionQuality: ExtractionQuality = ExtractionQuality.Balanced
     ): String {
-//        Logger.debug(
-//            "Extracting text from PDF {} using method {} with quality {}",
-//            name,
-//            extractionMethod,
-//            extractionQuality
-//        )
-
         if (extractionMethod == ExtractionMethod.Text) {
             val extractedText = Loader.loadPDF(location).use { document ->
                 PDFTextStripper().getText(document)
             }
             if (extractedText.trim().isNotEmpty()) {
-//                Logger.debug(DocumentMarker, "Extracted text from PDF {} using Text method ", name)
                 return extractedText
             }
         }
@@ -80,19 +72,13 @@ class PDF(pdfLocation: File) : Document(pdfLocation, "pdf") {
             for (batchStart in 0 until totalPages step batchSize) {
                 val batchEnd = (batchStart + batchSize).coerceAtMost(totalPages)
                 val images = extractImagesFromPDF(batchStart until batchEnd, location, extractionQuality)
-                images.mapIndexed { i, image ->
+                images.map { image ->
                     async(Dispatchers.Default) {
-                        semaphore.withPermit {
-//                            Logger.debug(DocumentMarker, "Parsing page {}/{} of {}", batchStart + i, totalPages, name)
-                            extractedText.append(Tesseract().performOCR(image))
-//                            Logger.debug(DocumentMarker, "Parsed page {}/{} of {}", batchStart + i, totalPages, name)
-                        }
+                        extractedText.append(Tesseract().performOCR(image))
                     }
                 }.awaitAll()
             }
         }
-
-//        Logger.debug(DocumentMarker, "Extracted text from PDF {} using Image method ", pdfLocation.nameWithoutExtension)
 
         return extractedText.toString()
     }
@@ -106,9 +92,7 @@ class PDF(pdfLocation: File) : Document(pdfLocation, "pdf") {
             val pdfRenderer = PDFRenderer(document)
             for (page in pages) {
                 if (page < document.numberOfPages) {
-//                    Logger.debug(DocumentMarker, "Rendering page {} for pdf {}", page, name)
                     it.add(pdfRenderer.renderImageWithDPI(page, extractionQuality.dpi.toFloat()))
-//                    Logger.debug(DocumentMarker, "Rendered page {} for pdf {}", page, name)
                 }
             }
         }
