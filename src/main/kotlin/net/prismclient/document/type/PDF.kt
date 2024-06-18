@@ -3,7 +3,7 @@
 // IDEA: Validation of processed text -> with LLMs? (Emending)
 // FUTURE: Use different OCR Library for GPU based processing (massive documents).
 // TODO: Debug markers
-package net.prismclient.document.type.pdf
+package net.prismclient.document.type
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async

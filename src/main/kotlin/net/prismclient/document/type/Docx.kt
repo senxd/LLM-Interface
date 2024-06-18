@@ -1,39 +1,38 @@
 package net.prismclient.document.type
 
 import net.prismclient.document.Document
+import org.apache.poi.xwpf.usermodel.XWPFDocument
 import java.io.File
+import java.io.FileInputStream
 
 /**
  * Used for parsing Microsoft Word documents (file extension docx).
+ *
+ * @author Winter
  */
 class Docx(fileLocation: File) : Document(fileLocation, "docx") {
- //import org.apache.poi.xwpf.usermodel.XWPFDocument
-    //import java.io.FileInputStream
-    //
-    //fun readDocxFile(filePath: String) {
-    //    // Open the DOCX file
-    //    FileInputStream(filePath).use { fis ->
-    //        // Create a document object
-    //        val document = XWPFDocument(fis)
-    //
-    //        // Iterate through the paragraphs in the document
-    //        for (paragraph in document.paragraphs) {
-    //            println(paragraph.text)
-    //        }
-    //
-    //        // Iterate through the tables in the document
-    //        for (table in document.tables) {
-    //            for (row in table.rows) {
-    //                for (cell in row.tableCells) {
-    //                    println(cell.text)
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
-    //
-    //fun main() {
-    //    val filePath = "path/to/your/document.docx"
-    //    readDocxFile(filePath)
-    //}
+    fun extractText(): String {
+        FileInputStream(location).use {
+            XWPFDocument(FileInputStream(location)).use { document ->
+                val content = StringBuilder()
+
+                document.paragraphs.forEach { paragraph ->
+                    content.append(paragraph.text).append("\n")
+                }
+
+                document.tables.forEach { table ->
+                    table.rows.forEach { row ->
+                        row.tableCells.forEach { cell ->
+                            content.append(cell.text).append("\n")
+                        }
+                    }
+                }
+
+                document.close()
+
+                return content.toString()
+            }
+        }
+    }
+
 }
