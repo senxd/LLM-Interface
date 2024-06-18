@@ -9,7 +9,7 @@ import net.prismclient.payload.ResponsePayload
  *
  * @author Winter
  */
-abstract class Model(val modelName: String, val modelVersion: String) {
+abstract class LLM(val modelName: String, val modelVersion: String) {
     val apis: MutableList<API> = mutableListOf()
 
     abstract fun establishConnection()

@@ -1,9 +1,8 @@
 package net.prismclient.model.dsl
 
 import net.prismclient.feature.api.API
-import net.prismclient.feature.steps.Step
 import net.prismclient.model.Message
-import net.prismclient.model.Model
+import net.prismclient.model.LLM
 import net.prismclient.util.message
 import net.prismclient.util.messagePayload
 import kotlin.properties.Delegates
@@ -11,7 +10,7 @@ import kotlin.properties.Delegates
 object ModelDSL {
     private val regex = Regex("""\d+\.\s""")
 
-    var activeModel: Model by Delegates.notNull()
+    var activeModel: LLM by Delegates.notNull()
     var activeAPIs: MutableList<API> = mutableListOf()
 
 

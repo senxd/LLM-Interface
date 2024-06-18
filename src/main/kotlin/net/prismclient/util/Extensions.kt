@@ -6,15 +6,15 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import net.prismclient.document.Document
 import net.prismclient.model.Message
-import net.prismclient.model.Model
+import net.prismclient.model.LLM
 import net.prismclient.model.dsl.ModelDSL
 import net.prismclient.payload.MessagePayload
 import java.io.File
 
 /**
- * Creates a new block given the [Model]. Is used as the basis for interfacing with this Library.
+ * Creates a new block given the [LLM]. Is used as the basis for interfacing with this Library.
  */
-inline fun Model(model: Model, action: ModelDSL.() -> Unit) {
+inline fun Model(model: LLM, action: ModelDSL.() -> Unit) {
     ModelDSL.activeModel = model
     ModelDSL.action()
 }

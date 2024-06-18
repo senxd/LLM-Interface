@@ -14,7 +14,7 @@ import java.util.concurrent.CountDownLatch
 import kotlin.properties.Delegates
 
 class OpenAIModel(openAIModelName: String, val apiKey: String) :
-    Model(openAIModelName, openAIModelName.replace("gpt-", "")) {
+    LLM(openAIModelName, openAIModelName.replace("gpt-", "")) {
     private val client = OkHttpClient()
 
     override fun establishConnection() {
