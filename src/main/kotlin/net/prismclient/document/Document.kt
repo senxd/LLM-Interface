@@ -8,7 +8,7 @@ import java.io.File
  * @author Winter
  *
  */
-abstract class Document(val location: File, vararg val fileExtension: String, var cache: Boolean = false) {
+abstract class Document(val location: File, vararg val fileExtensions: String, var cache: Boolean = false) {
     /**
      * The name of the file as written.
      */

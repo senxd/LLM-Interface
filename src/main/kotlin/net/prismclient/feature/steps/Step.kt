@@ -1,4 +1,3 @@
 package net.prismclient.feature.steps
 
-class Step(prompt: String) {
-}
+class Step(prompt: String)

@@ -1,4 +1,6 @@
-@file:Suppress("UNCHECKED_CAST")
+// IMPROVE: Debug stats
+@file:Suppress("UNCHECKED_CAST", "UNUSED", "FunctionName")
+
 package net.prismclient.feature.api
 
 import net.prismclient.util.Copyable
@@ -21,9 +23,8 @@ abstract class API {
 
 /**
  * [APIFunction] is an abstract class which acts as a wrapper for a standard function. The purpose is to allow an AI
- * model to interface with a defined API function to interact with. The two variables [functionDescription] and
- * [parameterPurpose] document the purpose of the function (and its parameters) for the AI Model's use. It is provided
- * directly into the context.
+ * model to interface with a defined API function to interact with. [functionDescription] provides the purpose of the
+ * function to the LLM.
  *
  * All parameters are Strings, which can then be cast to the expected class based on the defined purpose. [R] serves
  * as the class type which the function will return.
@@ -36,11 +37,7 @@ class APIFunction<R>(
     val functionParameters: MutableList<APIParameter<*>>,
     val responseName: String = "response",
     val response: (MutableList<APIParameter<*>>) -> R
-) {
-    init {
-//        Logger.debug(FunctionMarker, "Created API function $functionName")
-    }
-}
+)
 
 /**
  * @author Winter
@@ -53,8 +50,7 @@ open class APIParameter<T>(val parameterName: String, val parameterDescription: 
     }
 
     override fun copy(): APIParameter<T> =
-        APIParameter<T>(parameterName, parameterDescription)
-            .also { it.parameterValue = parameterValue }
+        APIParameter<T>(parameterName, parameterDescription).also { it.parameterValue = parameterValue }
 }
 
 /**
@@ -73,11 +69,8 @@ inline fun <R> API.Function(
     functionParameters: MutableList<APIParameter<*>>,
     responseName: String = "response",
     crossinline response: () -> R
-): APIFunction<R> = APIFunction<R>(
-    functionName,
-    functionDescription,
-    functionParameters,
-    responseName
+): APIFunction<R> = APIFunction(
+    functionName, functionDescription, functionParameters, responseName
 ) {
     response()
 }.also {
@@ -101,10 +94,7 @@ inline fun <P1, R> API.Function(
     responseName: String = "response",
     crossinline response: (p1: P1) -> R
 ): APIFunction<R> = APIFunction(
-    functionName,
-    functionDescription,
-    functionParameters,
-    responseName
+    functionName, functionDescription, functionParameters, responseName
 ) { parameters ->
     response(parameters[0].parameterValue as P1)
 }.also {
@@ -128,10 +118,7 @@ inline fun <P1, P2, R> API.Function(
     responseName: String = "response",
     crossinline response: (p1: P1, p2: P2) -> R
 ): APIFunction<R> = APIFunction(
-    functionName,
-    functionDescription,
-    functionParameters,
-    responseName
+    functionName, functionDescription, functionParameters, responseName
 ) { parameters ->
     response(parameters[0].parameterValue as P1, parameters[1].parameterValue as P2)
 }.also {
@@ -155,10 +142,7 @@ inline fun <P1, P2, P3, R> API.Function(
     responseName: String = "response",
     crossinline response: (p1: P1, p2: P2, p3: P3) -> R
 ): APIFunction<R> = APIFunction(
-    functionName,
-    functionDescription,
-    functionParameters,
-    responseName
+    functionName, functionDescription, functionParameters, responseName
 ) { parameters ->
     response(parameters[0].parameterValue as P1, parameters[1].parameterValue as P2, parameters[2].parameterValue as P3)
 }.also {
@@ -182,12 +166,14 @@ inline fun <P1, P2, P3, P4, R> API.Function(
     responseName: String = "response",
     crossinline response: (p1: P1, p2: P2, p3: P3, p4: P4) -> R
 ): APIFunction<R> = APIFunction(
-    functionName,
-    functionDescription,
-    functionParameters,
-    responseName
+    functionName, functionDescription, functionParameters, responseName
 ) { parameters ->
-    response(parameters[0].parameterValue as P1, parameters[1].parameterValue as P2, parameters[2].parameterValue as P3, parameters[3].parameterValue as P4)
+    response(
+        parameters[0].parameterValue as P1,
+        parameters[1].parameterValue as P2,
+        parameters[2].parameterValue as P3,
+        parameters[3].parameterValue as P4
+    )
 }.also {
     this.apiFunctions.add(it)
 }
@@ -209,12 +195,15 @@ inline fun <P1, P2, P3, P4, P5, R> API.Function(
     responseName: String = "response",
     crossinline response: (p1: P1, p2: P2, p3: P3, p4: P4, p5: P5) -> R
 ): APIFunction<R> = APIFunction(
-    functionName,
-    functionDescription,
-    functionParameters,
-    responseName
+    functionName, functionDescription, functionParameters, responseName
 ) { parameters ->
-    response(parameters[0].parameterValue as P1, parameters[1].parameterValue as P2, parameters[2].parameterValue as P3, parameters[3].parameterValue as P4, parameters[4].parameterValue as P5)
+    response(
+        parameters[0].parameterValue as P1,
+        parameters[1].parameterValue as P2,
+        parameters[2].parameterValue as P3,
+        parameters[3].parameterValue as P4,
+        parameters[4].parameterValue as P5
+    )
 }.also {
     this.apiFunctions.add(it)
 }
@@ -222,6 +211,6 @@ inline fun <P1, P2, P3, P4, P5, R> API.Function(
 /**
  * Creates an [APIParameter] where the expected type is [R]
  */
-fun <R> API.Parameter(
+fun <R> Parameter(
     parameterName: String, parameterDescription: String
 ) = APIParameter<R>(parameterName, parameterDescription)

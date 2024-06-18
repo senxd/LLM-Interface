@@ -1,3 +1,4 @@
+// IMPROVE: Documentation
 package net.prismclient.model.dsl
 
 import net.prismclient.feature.api.API
@@ -13,6 +14,9 @@ object ModelDSL {
     var activeModel: LLM by Delegates.notNull()
     var activeAPIs: MutableList<API> = mutableListOf()
 
+
+    inline fun Prompt(message: String, action: ModelDSL.(response: String) -> Unit): String =
+        Prompt(message.message, action)
 
     inline fun Prompt(message: Message, action: ModelDSL.(response: String) -> Unit): String {
         val response = activeModel.sendMessage(message.messagePayload)
