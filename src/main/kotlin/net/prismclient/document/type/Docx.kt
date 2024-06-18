@@ -10,7 +10,7 @@ import java.io.FileInputStream
  *
  * @author Winter
  */
-class Docx(fileLocation: File) : Document(fileLocation, "docx") {
+class Docx(fileLocation: File) : Document(fileLocation, "docx", "doc") {
     override fun extract(): String {
         FileInputStream(location).use {
             XWPFDocument(FileInputStream(location)).use { document ->
