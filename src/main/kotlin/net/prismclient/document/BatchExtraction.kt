@@ -2,10 +2,7 @@
 // IMPROVE: Fallback / checking
 package net.prismclient.document
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import java.io.File
@@ -41,7 +38,7 @@ class BatchExtraction(private val documents: ArrayList<Document>) {
     /**
      * Applies the [lambda] to every document in the execution.
      */
-    fun extract(poolSize: Int = 10, lambda: Document.(extractedText: String) -> Unit) {
+    fun extract(poolSize: Int = 10, delay: Long = 0L, lambda: Document.(extractedText: String) -> Unit) {
         val semaphore = Semaphore(poolSize)
 
         runBlocking {
@@ -49,6 +46,7 @@ class BatchExtraction(private val documents: ArrayList<Document>) {
                 async(Dispatchers.Default) {
                     semaphore.withPermit {
                         document.lambda(document.extract())
+                        delay(delay)
                     }
                 }
             }.awaitAll()

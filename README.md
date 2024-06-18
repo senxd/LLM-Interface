@@ -29,7 +29,9 @@ _This list is non-exhaustive and subject to change._
 - [x] Basic prompting (send message, receive message)
 - [x] Message History in DSL
 - [ ] LLM Features
-  - [x] API Functions (Allows for LLM to use defined functions, e.g., RAG or Web Search, or custom)
+  - [ ] API
+    - [x] Functions (Allows for LLM to use defined functions, e.g., RAG or Web Search, or custom)
+    - [ ] Database API
   - [x] Sequence Processing (_CoT_)
     - [ ] Generating a list of steps to solve a given problem
       - [ ] Executing said list with different API tools
