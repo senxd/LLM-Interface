@@ -41,6 +41,8 @@ object ModelDSL {
         return message
     }
 
+    fun Message(prompt: String): Message = Message { Include(prompt) }
+
     // API
     /**
      * Adds the provided API(s) to any calls to the LLM. The APIs will automatically be removed after the block
