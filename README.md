@@ -3,12 +3,12 @@
 _This project is a work in progress and is not expected to use in a production programs._
 
 This project provides a framework for utilizing LLMs in a structured way in Kotlin through the use of DSLs. You can
-either bring your own LLM by extending the `Model` class or use a pre-existing one for OpenAI (among others).
+either bring your own LLM by extending the `LLM` class or use a pre-existing such as `OpenAIModel`.
 
 # Features
 _This list is non-exhaustive and subject to change._
 - [x] Basic prompting (send message, receive message)
-- [ ] Message History in DSL
+- [x] Message History in DSL
 - [ ] LLM Features
   - [x] API Functions (Allows for LLM to use defined functions, e.g., RAG or Web Search, or custom)
   - [x] Sequence Processing (_CoT_)
@@ -29,7 +29,7 @@ _This list is non-exhaustive and subject to change._
       - [x] Text Metadata Extraction
     - [ ] Generic Text
       - [ ] Plain Text _.txt_
-      - [ ] Microsoft Word _.docx_
+      - [.] Microsoft Word _.docx_ or _.doc_
       - [ ] Rich Text Format _.rtf_
 - [ ] Batch Processing
   - [x] PDFs

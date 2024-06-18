@@ -1,4 +1,12 @@
 package net.prismclient.model
 
-class Message(val message: String, val maxTokens: Int? = null) {
+import net.prismclient.payload.ResponsePayload
+import net.prismclient.prompt.Prompt
+
+class Message {
+    val creationTimeStamp: String = ""
+    lateinit var sentTimeStamp: String
+
+    val prompt: Prompt = Prompt()
+    var responsePayload: ResponsePayload? = null
 }

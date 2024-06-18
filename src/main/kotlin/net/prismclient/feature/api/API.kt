@@ -18,7 +18,7 @@ abstract class API {
      * Returns the prompt to be injected into the LLM query. Can be used to add additional information / documentation
      * about the API for the LLM to use prior to using it.
      */
-    abstract fun injectionPrompt(): String
+    //abstract fun injectionPrompt(): String
 }
 
 /**
@@ -58,7 +58,6 @@ open class APIParameter<T>(val parameterName: String, val parameterDescription: 
  *
  * @param functionName The name of the API function.
  * @param functionDescription A brief description of what the function does.
- * @param functionParameters A list of parameters for the API function.
  * @param responseName The name of the response, default is "response".
  * @param response The lambda to execute for the response.
  * @return An instance of [APIFunction] that wraps the provided lambda.
@@ -66,11 +65,10 @@ open class APIParameter<T>(val parameterName: String, val parameterDescription: 
 inline fun <R> API.Function(
     functionName: String,
     functionDescription: String,
-    functionParameters: MutableList<APIParameter<*>>,
     responseName: String = "response",
     crossinline response: () -> R
 ): APIFunction<R> = APIFunction(
-    functionName, functionDescription, functionParameters, responseName
+    functionName, functionDescription, mutableListOf(), responseName
 ) {
     response()
 }.also {

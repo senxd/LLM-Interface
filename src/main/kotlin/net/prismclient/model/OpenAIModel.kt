@@ -1,6 +1,7 @@
 package net.prismclient.model
 
 import net.prismclient.feature.api.API
+import net.prismclient.model.dsl.ModelDSL.response
 import net.prismclient.payload.MessagePayload
 import net.prismclient.payload.ResponsePayload
 import okhttp3.*
@@ -25,7 +26,8 @@ class OpenAIModel(openAIModelName: String, val apiKey: String) :
         put(name, JSONObject().apply(lambda))
     }
 
-    override fun sendMessage(message: MessagePayload): ResponsePayload {
+    override fun sendMessage(payload: MessagePayload): ResponsePayload {
+        // Generate the tool request based on the OpenAPI spec
         val tools = JSONArray().apply {
             apis.forEach { tool ->
                 tool.apiFunctions.forEach { function ->
@@ -49,17 +51,26 @@ class OpenAIModel(openAIModelName: String, val apiKey: String) :
             }
         }
 
-        return sendMessage(
-            JSONArray()
-                .put(JSONObject().apply {
-                    put("role", "user")
-                    put("content", message.message.toString())
-                }),
-            if (apis.isNotEmpty()) tools else null
-        )
+        val messageHistory = JSONArray()
+
+        if (payload.chat.useMessageHistory) {
+            payload.chat.chatHistory.forEach { message: Message ->
+                messageHistory.put(messageObject("user", message.prompt.rawPrompt.toString()))
+                messageHistory.put(messageObject("assistant", message.response))
+            }
+        }
+
+        messageHistory.put(messageObject("user", payload.message.prompt.rawPrompt.toString()))
+
+        return sendMessage(messageHistory, if (apis.isNotEmpty()) tools else null)
     }
 
-    private fun sendMessage(messageHistory: JSONArray = JSONArray(), tools: JSONArray? = null): ResponsePayload {
+    private fun messageObject(role: String, content: String) = JSONObject().apply {
+        put("role", role)
+        put("content", content)
+    }
+
+    private fun sendMessage(messageHistory: JSONArray, tools: JSONArray? = null): ResponsePayload {
         val json = JSONObject().apply {
             put("model", modelName)
             put("messages", messageHistory)
@@ -190,7 +201,7 @@ class OpenAIModel(openAIModelName: String, val apiKey: String) :
         })
     }
 
-    override fun sendRawMessage(prompt: MessagePayload): ResponsePayload {
+    override fun sendRawMessage(payload: MessagePayload): ResponsePayload {
         TODO("Not implemented")
     }
 }

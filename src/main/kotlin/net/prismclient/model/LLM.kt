@@ -17,21 +17,16 @@ abstract class LLM(val modelName: String, val modelVersion: String) {
     /**
      * Inserts any active metadata from the [API] into the prompt before sending to the LLM.
      */
-    abstract fun sendMessage(message: MessagePayload): ResponsePayload
+    abstract fun sendMessage(payload: MessagePayload): ResponsePayload
 
     /**
      * Sends the provided message to the LLM. Does not include any API or other prompts.
      */
-    abstract fun sendRawMessage(prompt: MessagePayload): ResponsePayload
+    abstract fun sendRawMessage(payload: MessagePayload): ResponsePayload
 
     /**
      * If there are any active APIs, a prompt will be generated based on their requirements. Empty string will be
      * returned if no APIs are currently active.
      */
-    fun generateAPIPrompt(): String {
-        ""
-
-
-        return ""
-    }
+    fun generateAPIPrompt(): String = TODO("Feature not implemented")
 }

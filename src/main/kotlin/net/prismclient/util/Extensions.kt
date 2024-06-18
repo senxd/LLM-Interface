@@ -31,11 +31,11 @@ val String.localResource: File
 /**
  * Creates a [Message] given the String provided.
  */
-val String.message: Message
-    get() = Message(this)
+//val String.message: Message
+//    get() = Message(this)
 
-val Message.messagePayload: MessagePayload
-    get() = MessagePayload(StringBuilder(this.message))
+//val Message.messagePayload: MessagePayload
+//    get() = MessagePayload(StringBuilder(""))
 
 fun <T : Document> Array<T>.batchExecute(exec: (document: T) -> Unit) {
     runBlocking {
