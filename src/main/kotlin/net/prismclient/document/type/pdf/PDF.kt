@@ -1,4 +1,9 @@
-package net.prismclient.document.pdf
+// IMPROVE: Progress reports on large file extraction
+// IMPROVE: Memory Management (with High DPI -> 1.5gb for 1 image????)
+// IDEA: Validation of processed text -> with LLMs? (Emending)
+// FUTURE: Use different OCR Library for GPU based processing (massive documents).
+// TODO: Debug markers
+package net.prismclient.document.type.pdf
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -21,9 +26,7 @@ import java.io.File
  *
  * @author Winter
  */
-class PDF(val pdfLocation: File) : Document() {
-    val name: String get() = pdfLocation.nameWithoutExtension
-
+class PDF(pdfLocation: File) : Document(pdfLocation, "pdf") {
     /**
      * Specifies the language to use for OCR based text extraction (tess4j).
      *
@@ -36,7 +39,7 @@ class PDF(val pdfLocation: File) : Document() {
      *
      *  [Tess4j Dataset @ Github](https://github.com/tesseract-ocr/tessdata)
      */
-    var tesseractDatapath = "eng.traineddata".localResource.parent
+    var tesseractDatapath: String = "eng.traineddata".localResource.parent
 
     /**
      * Determines how many pages to parse at once. Processing too many pages at once with a high extraction quality
@@ -48,8 +51,8 @@ class PDF(val pdfLocation: File) : Document() {
      * Reads the text of the provided PDF through the provided [extractionMethod] and returns the document as a [String].
      */
     fun extractText(
-        extractionMethod: PDFExtractionMethod = PDFExtractionMethod.Text,
-        extractionQuality: PDFExtractionQuality = PDFExtractionQuality.Balanced
+        extractionMethod: ExtractionMethod = ExtractionMethod.Text,
+        extractionQuality: ExtractionQuality = ExtractionQuality.Balanced
     ): String {
 //        Logger.debug(
 //            "Extracting text from PDF {} using method {} with quality {}",
@@ -58,8 +61,8 @@ class PDF(val pdfLocation: File) : Document() {
 //            extractionQuality
 //        )
 
-        if (extractionMethod == PDFExtractionMethod.Text) {
-            val extractedText = Loader.loadPDF(pdfLocation).use { document ->
+        if (extractionMethod == ExtractionMethod.Text) {
+            val extractedText = Loader.loadPDF(location).use { document ->
                 PDFTextStripper().getText(document)
             }
             if (extractedText.trim().isNotEmpty()) {
@@ -73,10 +76,10 @@ class PDF(val pdfLocation: File) : Document() {
         val semaphore = Semaphore(2)
 
         runBlocking {
-            val totalPages = Loader.loadPDF(pdfLocation).use { it.numberOfPages }
+            val totalPages = Loader.loadPDF(location).use { it.numberOfPages }
             for (batchStart in 0 until totalPages step batchSize) {
                 val batchEnd = (batchStart + batchSize).coerceAtMost(totalPages)
-                val images = extractImagesFromPDF(batchStart until batchEnd, pdfLocation, extractionQuality)
+                val images = extractImagesFromPDF(batchStart until batchEnd, location, extractionQuality)
                 images.mapIndexed { i, image ->
                     async(Dispatchers.Default) {
                         semaphore.withPermit {
@@ -97,7 +100,7 @@ class PDF(val pdfLocation: File) : Document() {
     private fun extractImagesFromPDF(
         pages: IntRange,
         pdfFile: File,
-        extractionQuality: PDFExtractionQuality
+        extractionQuality: ExtractionQuality
     ): List<BufferedImage> = mutableListOf<BufferedImage>().also {
         Loader.loadPDF(pdfFile).use { document ->
             val pdfRenderer = PDFRenderer(document)
@@ -124,11 +127,11 @@ class PDF(val pdfLocation: File) : Document() {
     }
 
     /**
-     * Specifies the method to extract the PDF. Generally [PDFExtractionMethod.Text] is recommended.
+     * Specifies the method to extract the PDF. Generally [ExtractionMethod.Text] is recommended.
      *
      * @author Winter
      */
-    enum class PDFExtractionMethod {
+    enum class ExtractionMethod {
         /**
          * Extracts the text directly through the metadata of the PDF, will default to Image if no text-metadata is present.
          */
@@ -146,7 +149,7 @@ class PDF(val pdfLocation: File) : Document() {
      *
      * @author Winter
      */
-    enum class PDFExtractionQuality(val dpi: Int) {
+    enum class ExtractionQuality(val dpi: Int) {
         /**
          * Optimal for high density documents e.g., research papers. (Will take up a lot of Memory add "-Xmx4g" to VM Options)
          */

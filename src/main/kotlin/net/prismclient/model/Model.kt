@@ -20,9 +20,9 @@ abstract class Model(val modelName: String, val modelVersion: String) {
     abstract fun sendMessage(message: MessagePayload): ResponsePayload
 
     /**
-     * Sends the raw message to
+     * Sends the provided message to the LLM. Does not include any API or other prompts.
      */
-    abstract fun sendRawMessage(prompt: String): ResponsePayload
+    abstract fun sendRawMessage(prompt: MessagePayload): ResponsePayload
 
     /**
      * If there are any active APIs, a prompt will be generated based on their requirements. Empty string will be

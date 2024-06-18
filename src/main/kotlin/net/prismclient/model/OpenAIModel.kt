@@ -193,7 +193,7 @@ class OpenAIModel(openAIModelName: String, val apiKey: String) :
         })
     }
 
-    override fun sendRawMessage(prompt: String): ResponsePayload {
+    override fun sendRawMessage(prompt: MessagePayload): ResponsePayload {
         TODO("Not implemented")
     }
 }

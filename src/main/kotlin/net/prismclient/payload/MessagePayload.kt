@@ -1,5 +1,7 @@
 package net.prismclient.payload
 
+import net.prismclient.model.Message
+
 /**
  * The message sent to the AI Model
  *
@@ -8,9 +10,3 @@ package net.prismclient.payload
  * @param callback Will be invoked when the message Payload is completed.
  */
 class MessagePayload(val message: StringBuilder, /* val latent: Boolean, val callback: (String) -> Unit */) : Payload()
-
-
-fun String.toMessagePayload(): MessagePayload = MessagePayload(StringBuilder(this))
-
-//fun String.toMessagePayload(isLatent: Boolean = false, callback: (String) -> Unit): MessagePayload =
-//    MessagePayload(this, isLatent, callback)
