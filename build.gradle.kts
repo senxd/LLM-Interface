@@ -1,8 +1,6 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
     kotlin("jvm") version "1.9.22"
-    `maven-publish`
+    id("maven-publish")
 }
 
 group = "net.prismclient"
@@ -53,8 +51,7 @@ publishing {
 
     repositories {
         maven {
-            name = "local"
-            url = uri("${layout.buildDirectory}/repo")
+            url = uri("https://jitpack.io")
         }
     }
 }
