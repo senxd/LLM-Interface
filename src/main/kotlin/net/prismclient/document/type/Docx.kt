@@ -11,7 +11,7 @@ import java.io.FileInputStream
  * @author Winter
  */
 class Docx(fileLocation: File) : Document(fileLocation, "docx") {
-    fun extractText(): String {
+    override fun extract(): String {
         FileInputStream(location).use {
             XWPFDocument(FileInputStream(location)).use { document ->
                 val content = StringBuilder()
@@ -30,9 +30,10 @@ class Docx(fileLocation: File) : Document(fileLocation, "docx") {
 
                 document.close()
 
+                if (cache) extractionCache = content
+
                 return content.toString()
             }
         }
     }
-
 }

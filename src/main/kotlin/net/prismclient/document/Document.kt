@@ -8,9 +8,20 @@ import java.io.File
  * @author Winter
  *
  */
-abstract class Document(val location: File, vararg val fileExtension: String) {
+abstract class Document(val location: File, vararg val fileExtension: String, var cache: Boolean = false) {
     /**
      * The name of the file as written.
      */
     val name: String get() = location.nameWithoutExtension
+
+    var extractionCache: StringBuilder? = null
+
+    abstract fun extract(): String
+
+    /**
+     * Clears the cache of the parsed document if applicable.
+     */
+    fun clearCache() {
+        extractionCache = null
+    }
 }

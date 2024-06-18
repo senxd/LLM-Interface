@@ -47,13 +47,13 @@ class PDF(pdfLocation: File) : Document(pdfLocation, "pdf") {
      */
     var batchSize: Int = 10
 
+    var extractionMethod: ExtractionMethod = ExtractionMethod.Text
+    var extractionQuality: ExtractionQuality = ExtractionQuality.Balanced
+
     /**
      * Reads the text of the provided PDF through the provided [extractionMethod] and returns the document as a [String].
      */
-    fun extractText(
-        extractionMethod: ExtractionMethod = ExtractionMethod.Text,
-        extractionQuality: ExtractionQuality = ExtractionQuality.Balanced
-    ): String {
+    override fun extract(): String {
         if (extractionMethod == ExtractionMethod.Text) {
             val extractedText = Loader.loadPDF(location).use { document ->
                 PDFTextStripper().getText(document)
@@ -65,7 +65,6 @@ class PDF(pdfLocation: File) : Document(pdfLocation, "pdf") {
 
         // Fallback method or using Image method by default
         val extractedText = StringBuilder()
-        val semaphore = Semaphore(2)
 
         runBlocking {
             val totalPages = Loader.loadPDF(location).use { it.numberOfPages }
@@ -79,6 +78,9 @@ class PDF(pdfLocation: File) : Document(pdfLocation, "pdf") {
                 }.awaitAll()
             }
         }
+
+        // Cache the extracted text (if necessary)
+        if (cache) extractionCache = extractedText
 
         return extractedText.toString()
     }
