@@ -1,7 +1,6 @@
 package net.prismclient.model
 
 import net.prismclient.feature.api.API
-import net.prismclient.feature.api.openai.OpenAITool
 import net.prismclient.payload.MessagePayload
 import net.prismclient.payload.ResponsePayload
 import okhttp3.*
@@ -29,8 +28,6 @@ class OpenAIModel(openAIModelName: String, val apiKey: String) :
     override fun sendMessage(message: MessagePayload): ResponsePayload {
         val tools = JSONArray().apply {
             apis.forEach { tool ->
-                if (tool !is OpenAITool)
-                    throw RuntimeException("API is not an instance of OpenAITool for an OpenAI model")
                 tool.apiFunctions.forEach { function ->
                     put(JSONObject().apply {
                         put("name", function.functionName)
