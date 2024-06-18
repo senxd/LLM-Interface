@@ -1,5 +1,8 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
     kotlin("jvm") version "1.9.22"
+    `maven-publish`
 }
 
 group = "net.prismclient"
@@ -10,7 +13,7 @@ repositories {
 }
 
 dependencies {
-    testImplementation("org.jetbrains.kotlin:kotlin-test")
+    testImplementation(kotlin("test"))
 
     // Web Parsing
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
@@ -31,4 +34,27 @@ dependencies {
 
 kotlin {
     jvmToolchain(18)
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["kotlin"])
+
+            groupId = project.group.toString()
+            artifactId = project.name
+            version = project.version.toString()
+        }
+    }
+
+    repositories {
+        maven {
+            name = "local"
+            url = uri("${layout.buildDirectory}/repo")
+        }
+    }
+}
+
+tasks.withType<PublishToMavenLocal>().configureEach {
+    dependsOn(tasks.named("assemble"))
 }
