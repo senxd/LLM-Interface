@@ -3,7 +3,7 @@ package net.prismclient.model
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import net.prismclient.feature.api.API
-import net.prismclient.model.dsl.ModelDSL.response
+import net.prismclient.dsl.ModelDSL.response
 import net.prismclient.payload.MessagePayload
 import net.prismclient.payload.ResponsePayload
 import okhttp3.*
@@ -44,16 +44,16 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
             apis.forEach { tool ->
                 tool.apiFunctions.forEach { function ->
                     put(JSONObject().apply {
-                        put("name", function.functionName)
-                        put("description", function.functionDescription)
+                        put("name", function.name)
+                        put("description", function.description)
                         obj("parameters") {
                             put("type", "object")
-                            put("required", JSONArray(function.functionParameters.map { it.parameterName }))
+                            put("required", JSONArray(function.parameters.map { it.name }))
                             obj("properties") {
-                                function.functionParameters.forEach { parameter ->
-                                    obj(parameter.parameterName) {
+                                function.parameters.forEach { parameter ->
+                                    obj(parameter.name) {
                                         put("type", "string")
-                                        put("description", parameter.parameterDescription)
+                                        put("description", parameter.description)
                                     }
                                 }
                             }
@@ -170,19 +170,19 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
         // check when adding APIs to mention naming conflicts.
         var api: API by Delegates.notNull()
         val mappedFunction =
-            apis.firstNotNullOfOrNull { it.apiFunctions.find { f -> api = it; f.functionName == functionName } }
+            apis.firstNotNullOfOrNull { it.apiFunctions.find { f -> api = it; f.name == functionName } }
                 ?: throw NullPointerException("Function $functionName not found within APIs")
 
         // Map the parameters provided by the response from
         // ChatGPT to the APIParameters of the mapped function.
-        val mappedParameters = mappedFunction.functionParameters
+        val mappedParameters = mappedFunction.parameters
             .map {
                 // Create a copy of the parameter
                 it.copy().apply {
                     // Since the generic type is not known at runtime,
                     // an additional function is added to APIFunction
                     // to accept Any? which will cast to the return type.
-                    castToParameter(functionArguments.getString(parameterName))
+                    castToParameter(functionArguments.getString(name))
                 }
             }.toTypedArray().toMutableList()
 

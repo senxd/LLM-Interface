@@ -7,7 +7,7 @@ import kotlinx.coroutines.runBlocking
 import net.prismclient.document.Document
 import net.prismclient.model.Message
 import net.prismclient.model.LLM
-import net.prismclient.model.dsl.ModelDSL
+import net.prismclient.dsl.ModelDSL
 import net.prismclient.payload.MessagePayload
 import java.io.File
 

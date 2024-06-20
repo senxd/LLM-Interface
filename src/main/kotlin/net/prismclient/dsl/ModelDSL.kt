@@ -1,12 +1,14 @@
 // IMPROVE: Documentation
-package net.prismclient.model.dsl
+package net.prismclient.dsl
 
-import net.prismclient.MessageDSL
 import net.prismclient.chat.Chat
 import net.prismclient.feature.api.API
+import net.prismclient.feature.api.APIFunction
+import net.prismclient.feature.api.InlineAPI
 import net.prismclient.model.LLM
 import net.prismclient.model.Message
 import net.prismclient.payload.MessagePayload
+import net.prismclient.prompt.Prompt
 import kotlin.properties.Delegates
 
 object ModelDSL {
@@ -14,7 +16,6 @@ object ModelDSL {
 
     var activeModel: LLM by Delegates.notNull()
     var activeChat: Chat by Delegates.notNull()
-    var activeAPIs: MutableList<API> = mutableListOf()
 
     val Message.response: String
         get() = this.responsePayload?.response ?: throw NullPointerException("Response is Null")
@@ -27,7 +28,7 @@ object ModelDSL {
         action(activeChat)
     }
 
-    inline fun Message(action: MessageDSL.() -> Unit): Message {
+    inline fun Message(initialPrompt: Prompt? = null, action: MessageDSL.() -> Unit): Message {
         val message = Message()
 
         MessageDSL.message = message
@@ -41,7 +42,7 @@ object ModelDSL {
         return message
     }
 
-    fun Message(prompt: String): Message = Message { Include(prompt) }
+    fun Message(prompt: String, initialPrompt: Prompt? = null): Message = Message(initialPrompt) { Include(prompt) }
 
     // API
     /**
@@ -49,49 +50,52 @@ object ModelDSL {
      * is completed.
      */
     inline fun API(vararg api: API, action: (ModelDSL.() -> Unit)) {
-        activeAPIs += api
+        activeModel.apis.forEach { if (!activeModel.apis.contains(it)) activeModel.apis += it }
         ModelDSL.action()
-        // Remove the applied APIs from the active API list.
-        activeAPIs -= api
+        activeModel.apis -= api
     }
 
     /**
      * Adds the provided API(s) to any calls to the LLM.
      */
     fun API(vararg api: API) {
-        activeAPIs += api
-        activeModel.apis += activeAPIs
+        API(api = api) {}
     }
 
     /**
      * Removes the provided API(s) to any calls to the LLM.
      */
     fun removeApi(vararg api: API) {
-        activeAPIs -= api
+        activeModel.apis -= api.toSet()
     }
 
     /**
      * Removes all active APIs.
      */
     fun clearApis() {
-        activeAPIs.clear()
+        activeModel.apis.clear()
     }
 
-
-//    inline fun Prompt(message: String, action: ModelDSL.(response: String) -> Unit): String =
-//        Prompt(message.message, action)
-//
-//    inline fun Prompt(message: Message, action: ModelDSL.(response: String) -> Unit): String {
-//        val response = activeModel.sendMessage(message.messagePayload)
-//
-//        this.action(response.response)
-//
-//        return response.response
-//    }
-
-//    fun Prompt(message: String): String = Prompt(message.message) { /* ... */ }
-
-//    fun sendRawMessage(message: Message) {
-//        activeModel.sendRawMessage(message.messagePayload)
-//    }
+    /**
+     * Creates an [APIFunction] which returns [R] and has no parameters.
+     *
+     * @param functionName The name of the API function.
+     * @param functionDescription A brief description of what the function does.
+     * @param responseName The name of the response, default is "response".
+     * @param response The lambda to execute for the response.
+     * @return An instance of [APIFunction] that wraps the provided lambda.
+     */
+    inline fun <R> Function(
+        functionName: String,
+        functionDescription: String,
+        responseName: String = "response",
+        crossinline response: () -> R
+    ): APIFunction<R> = APIFunction(
+        functionName, functionDescription, mutableListOf(), responseName
+    ) {
+        response()
+    }.apply {
+        API(InlineAPI)
+        InlineAPI.apiFunctions.add(this)
+    }
 }

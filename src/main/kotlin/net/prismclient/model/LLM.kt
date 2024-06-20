@@ -28,5 +28,7 @@ abstract class LLM(val modelName: String, val modelVersion: String) {
      * If there are any active APIs, a prompt will be generated based on their requirements. Empty string will be
      * returned if no APIs are currently active.
      */
-    fun generateAPIPrompt(): String = TODO("Feature not implemented")
+    open fun generateAPIPrompt(): String {
+        throw RuntimeException("Generating API prompts is not supported for ${this::class.simpleName}")
+    }
 }

@@ -23,7 +23,7 @@ abstract class API {
 
 /**
  * [APIFunction] is an abstract class which acts as a wrapper for a standard function. The purpose is to allow an AI
- * model to interface with a defined API function to interact with. [functionDescription] provides the purpose of the
+ * model to interface with a defined API function to interact with. [description] provides the purpose of the
  * function to the LLM.
  *
  * All parameters are Strings, which can then be cast to the expected class based on the defined purpose. [R] serves
@@ -32,9 +32,9 @@ abstract class API {
  * @author Winter
  */
 class APIFunction<R>(
-    val functionName: String,
-    val functionDescription: String,
-    val functionParameters: MutableList<APIParameter<*>>,
+    val name: String,
+    val description: String,
+    val parameters: MutableList<APIParameter<*>>,
     val responseName: String = "response",
     val response: (MutableList<APIParameter<*>>) -> R
 )
@@ -42,7 +42,7 @@ class APIFunction<R>(
 /**
  * @author Winter
  */
-open class APIParameter<T>(val parameterName: String, val parameterDescription: String) : Copyable<APIParameter<T>> {
+open class APIParameter<T>(val name: String, val description: String) : Copyable<APIParameter<T>> {
     open var parameterValue: T? = null
 
     fun castToParameter(value: Any?) {
@@ -50,7 +50,7 @@ open class APIParameter<T>(val parameterName: String, val parameterDescription: 
     }
 
     override fun copy(): APIParameter<T> =
-        APIParameter<T>(parameterName, parameterDescription).also { it.parameterValue = parameterValue }
+        APIParameter<T>(name, description).also { it.parameterValue = parameterValue }
 }
 
 /**

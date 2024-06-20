@@ -58,4 +58,13 @@ _This list is non-exhaustive and subject to change._
 
 # Related Research Papers
 [ReAct, method for improving accuracy complex tasks](https://arxiv.org/abs/2210.03629)
+
 [Self-Consistency Improves ... - Improved CoT Reasoning](https://arxiv.org/abs/2203.11171)
+
+# Future Demos & Research
+- [ ] Demos
+  - [ ] Document Tagging Demo
+- [ ] Research
+  - [ ] Testing a combined ReAct + Observational Sub-stepping Approach with different datasets:
+    - [ ] ALFWorld
+    - [ ] WebShop

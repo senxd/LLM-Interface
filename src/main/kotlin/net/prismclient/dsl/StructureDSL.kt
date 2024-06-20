@@ -1,4 +1,4 @@
-package net.prismclient.model.dsl
+package net.prismclient.dsl
 
 class StructureDSL {
 }
