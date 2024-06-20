@@ -1,5 +1,7 @@
 package net.prismclient.model
 
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import net.prismclient.feature.api.API
 import net.prismclient.model.dsl.ModelDSL.response
 import net.prismclient.payload.MessagePayload
@@ -13,9 +15,19 @@ import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import kotlin.properties.Delegates
 
-class OpenAIModel(model: String, val apiKey: String) :
-    LLM(model, model.replace("gpt-", "")) {
+class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace("gpt-", "")) {
     private val client = OkHttpClient()
+
+    /**
+     * If the package fails to send to OpenAI's servers due to a 429 error (rate limit), it will automatically resend
+     * after the delay has passed. Set to -1 to disable resending.
+     */
+    var rateLimitDelay: Long = 5000L
+
+    /**
+     * Maximum attempts to resend the message to the server.
+     */
+    var maxResendingAttempts = 3
 
     override fun establishConnection() {
         // ...
@@ -70,7 +82,7 @@ class OpenAIModel(model: String, val apiKey: String) :
         put("content", content)
     }
 
-    private fun sendMessage(messageHistory: JSONArray, tools: JSONArray? = null): ResponsePayload {
+    private fun sendMessage(messageHistory: JSONArray, tools: JSONArray? = null, attempt: Int = 0): ResponsePayload {
         val json = JSONObject().apply {
             put("model", modelName)
             put("messages", messageHistory)
@@ -90,7 +102,25 @@ class OpenAIModel(model: String, val apiKey: String) :
             response.use {
                 if (!it.isSuccessful) {
                     latch.countDown()
-                    throw RuntimeException("Failed to send request: $it")
+
+                    val errorCode = response.code
+
+                    when (errorCode) {
+                        /* Auth */
+                        401 -> throw RuntimeException("Invalid OpenAI authentication key.")
+                        /* Rate Limit */
+                        429 -> {
+                            if (rateLimitDelay != -1L && attempt + 1 > maxResendingAttempts) {
+                                runBlocking {
+                                    delay(rateLimitDelay)
+
+                                    sendMessage(messageHistory, tools, attempt + 1)
+                                }
+                            }
+                        }
+
+                    }
+                    throw RuntimeException("Failed to send message. Error Code: $errorCode, Attempts: $attempt")
                 }
 
                 val responseBody = it.body?.string()

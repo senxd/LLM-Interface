@@ -55,3 +55,7 @@ _This list is non-exhaustive and subject to change._
 - [ ] Batch Processing
   - [x] PDFs
   - [ ] LLM Requests
+
+# Related Research Papers
+[ReAct, method for improving accuracy complex tasks](https://arxiv.org/abs/2210.03629)
+[Self-Consistency Improves ... - Improved CoT Reasoning](https://arxiv.org/abs/2203.11171)
