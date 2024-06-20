@@ -11,28 +11,22 @@ import java.io.FileInputStream
  * @author Winter
  */
 class Docx(fileLocation: File) : Document(fileLocation, "docx", "doc") {
-    override fun extract(): String {
-        FileInputStream(location).use {
-            XWPFDocument(FileInputStream(location)).use { document ->
-                val content = StringBuilder()
-
+    override fun extract(): String = Builder {
+        FileInputStream(file).use {
+            XWPFDocument(FileInputStream(file)).use { document ->
                 document.paragraphs.forEach { paragraph ->
-                    content.append(paragraph.text).append("\n")
+                    this.append(paragraph.text).append("\n")
                 }
 
                 document.tables.forEach { table ->
                     table.rows.forEach { row ->
                         row.tableCells.forEach { cell ->
-                            content.append(cell.text).append("\n")
+                            this.append(cell.text).append("\n")
                         }
                     }
                 }
 
                 document.close()
-
-                if (cache) extractionCache = content
-
-                return content.toString()
             }
         }
     }

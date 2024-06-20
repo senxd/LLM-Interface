@@ -8,11 +8,13 @@ import java.io.File
  * @author Winter
  *
  */
-abstract class Document(val location: File, vararg val fileExtensions: String, var cache: Boolean = false) {
+abstract class Document(val file: File, vararg val fileExtensions: String, var cache: Boolean = false) {
     /**
      * The name of the file as written.
      */
-    val name: String get() = location.nameWithoutExtension
+    val name: String get() = file.nameWithoutExtension
+
+    val extension: String get() = file.extension
 
     var extractionCache: StringBuilder? = null
 
@@ -24,4 +26,14 @@ abstract class Document(val location: File, vararg val fileExtensions: String, v
     fun clearCache() {
         extractionCache = null
     }
+
+    /**
+     * Return a String given the lambda with a [StringBuilder] as a receiver. Automatically updates [extractionCache].
+     */
+    protected inline fun Builder(lambda: StringBuilder.() -> Unit): String =
+        StringBuilder()
+            .apply {
+                if (cache) extractionCache = this
+                lambda(this)
+            }.toString()
 }

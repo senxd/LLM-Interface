@@ -9,8 +9,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import net.prismclient.document.Document
 import net.prismclient.util.localResource
 import net.sourceforge.tess4j.Tesseract
@@ -53,9 +51,9 @@ class PDF(pdfLocation: File) : Document(pdfLocation, "pdf") {
     /**
      * Reads the text of the provided PDF through the provided [extractionMethod] and returns the document as a [String].
      */
-    override fun extract(): String {
+    override fun extract(): String = Builder {
         if (extractionMethod == ExtractionMethod.Text) {
-            val extractedText = Loader.loadPDF(location).use { document ->
+            val extractedText = Loader.loadPDF(file).use { document ->
                 PDFTextStripper().getText(document)
             }
             if (extractedText.trim().isNotEmpty()) {
@@ -63,26 +61,18 @@ class PDF(pdfLocation: File) : Document(pdfLocation, "pdf") {
             }
         }
 
-        // Fallback method or using Image method by default
-        val extractedText = StringBuilder()
-
         runBlocking {
-            val totalPages = Loader.loadPDF(location).use { it.numberOfPages }
+            val totalPages = Loader.loadPDF(file).use { it.numberOfPages }
             for (batchStart in 0 until totalPages step batchSize) {
                 val batchEnd = (batchStart + batchSize).coerceAtMost(totalPages)
-                val images = extractImagesFromPDF(batchStart until batchEnd, location, extractionQuality)
+                val images = extractImagesFromPDF(batchStart until batchEnd, file, extractionQuality)
                 images.map { image ->
                     async(Dispatchers.Default) {
-                        extractedText.append(Tesseract().performOCR(image))
+                        this@Builder.append(Tesseract().performOCR(image))
                     }
                 }.awaitAll()
             }
         }
-
-        // Cache the extracted text (if necessary)
-        if (cache) extractionCache = extractedText
-
-        return extractedText.toString()
     }
 
     private fun extractImagesFromPDF(
