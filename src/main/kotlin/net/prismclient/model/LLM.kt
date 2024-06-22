@@ -1,6 +1,6 @@
 package net.prismclient.model
 
-import net.prismclient.feature.api.API
+import net.prismclient.tools.Tool
 import net.prismclient.payload.MessagePayload
 import net.prismclient.payload.ResponsePayload
 
@@ -10,12 +10,12 @@ import net.prismclient.payload.ResponsePayload
  * @author Winter
  */
 abstract class LLM(val modelName: String, val modelVersion: String) {
-    val apis: MutableList<API> = mutableListOf()
+    val tools: MutableList<Tool> = mutableListOf()
 
     abstract fun establishConnection()
 
     /**
-     * Inserts any active metadata from the [API] into the prompt before sending to the LLM.
+     * Inserts any active metadata from the [Tool] into the prompt before sending to the LLM.
      */
     abstract fun sendMessage(payload: MessagePayload): ResponsePayload
 

@@ -2,7 +2,7 @@ package net.prismclient.model
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import net.prismclient.feature.api.API
+import net.prismclient.tools.Tool
 import net.prismclient.dsl.ModelDSL.response
 import net.prismclient.payload.MessagePayload
 import net.prismclient.payload.ResponsePayload
@@ -41,8 +41,8 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
     override fun sendMessage(payload: MessagePayload): ResponsePayload {
         // Generate the tool request based on the OpenAPI spec
         val tools = JSONArray().apply {
-            apis.forEach { tool ->
-                tool.apiFunctions.forEach { function ->
+            tools.forEach { tool ->
+                tool.toolFunctions.forEach { function ->
                     put(JSONObject().apply {
                         put("name", function.name)
                         put("description", function.description)
@@ -74,7 +74,7 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
 
         messageHistory.put(messageObject("user", payload.message.prompt.rawPrompt.toString()))
 
-        return sendMessage(messageHistory, if (apis.isNotEmpty()) tools else null)
+        return sendMessage(messageHistory, if (this.tools.isNotEmpty()) tools else null)
     }
 
     private fun messageObject(role: String, content: String) = JSONObject().apply {
@@ -150,7 +150,7 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
     /**
      * Interprets Chat-GPT's response when a function is desired that has been previously specified.
      *
-     * @see [API]
+     * @see [Tool]
      */
     private fun handleAPICalls(response: JSONObject, messageHistory: JSONArray): String {
         val functionCall = response.optJSONObject("function_call")
@@ -168,9 +168,9 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
         // I presume it automatically picks the first defined API, so Priority
         // will take place, but a warning should be mentioned in an additional
         // check when adding APIs to mention naming conflicts.
-        var api: API by Delegates.notNull()
+        var tool: Tool by Delegates.notNull()
         val mappedFunction =
-            apis.firstNotNullOfOrNull { it.apiFunctions.find { f -> api = it; f.name == functionName } }
+            tools.firstNotNullOfOrNull { it.toolFunctions.find { f -> tool = it; f.name == functionName } }
                 ?: throw NullPointerException("Function $functionName not found within APIs")
 
         // Map the parameters provided by the response from

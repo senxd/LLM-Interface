@@ -1,9 +1,9 @@
-package net.prismclient.feature.api
+package net.prismclient.tools
 
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
-object ExampleAPI : API() {
+object ExampleTool : Tool() {
     val exampleFunction = Function(
         functionName = "getTime",
         functionDescription = "Returns the current time based on the user's location."

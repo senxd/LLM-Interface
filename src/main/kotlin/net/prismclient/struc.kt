@@ -1,9 +1,5 @@
 package net.prismclient
 
-import net.prismclient.feature.api.ExampleAPI
-import net.prismclient.model.OpenAIModel
-import net.prismclient.util.Model
-
 // How the DSL should be like
 
 fun main() {
