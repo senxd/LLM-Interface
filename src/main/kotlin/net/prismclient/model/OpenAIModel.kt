@@ -2,10 +2,10 @@ package net.prismclient.model
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import net.prismclient.dsl.ModelDSL.response
 import net.prismclient.payload.MessagePayload
 import net.prismclient.payload.ResponsePayload
 import net.prismclient.tools.Tool
+import net.prismclient.tools.ToolFunction
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -15,6 +15,15 @@ import java.io.IOException
 import java.util.concurrent.CountDownLatch
 import kotlin.properties.Delegates
 
+/**
+ * The [LLM] class for using Open AI (gpt series only) models.
+ *
+ * The [Tool] system fully supported with multiple calls being possible in a single request, however, if a tool is
+ * [ToolFunction.forceToolCall], only that tool will be called, and only once. This is a limitation of the API and
+ * cannot be "fixed."
+ *
+ * @author Winter
+ */
 class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace("gpt-", "")) {
     private val client = OkHttpClient()
 
@@ -43,7 +52,7 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
         // Generate the tool request based on the OpenAPI spec
         val activeTools = JSONArray().apply {
             tools.forEach { tool ->
-                tool.toolFunctions.filter { !it.disabled }.forEach { function ->
+                tool.toolFunctions.filter { !it.disableToolCall }.forEach { function ->
                     put(JSONObject().apply {
                         put("type", "function")
                         obj("function") {
@@ -67,7 +76,7 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
                     // If the function wants to be required to be make toolChoice non-null
                     // based on the function and check if there is already a forced function
                     // as it seems that OpenAI prohibits more than one forced function.
-                    if (function.force) {
+                    if (function.forceToolCall) {
                         if (toolChoice != null) {
                             println(
                                 "Multiple forced functions being used, preferring ${function.name} over ${
@@ -104,10 +113,6 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
     private fun messageObject(role: String, content: String) = JSONObject().apply {
         put("role", role)
         put("content", content)
-//        put("content", JSONArray().apply{ put(JSONObject().apply {
-//            put("type", "text")
-//            put("text", content)
-//        }) } )
     }
 
     private fun sendMessage(
@@ -228,5 +233,19 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
                 callback(response)
             }
         })
+    }
+
+    override fun forceTool(vararg tools: ToolFunction<*>) {
+        // Open AI limits forced tool calling to a single
+        // tool with a singed request. Therefore, we need
+        // to ensure all the other functions are not currently
+        // forced. It is still possible to have multiple tools
+        // being forced and in this case, the last ToolFunction
+        // of a Tool and last Tool within tools will be preferred.
+        this.tools.flatMap { it.toolFunctions }
+            .filter { it.forceToolCall }
+            .forEach { it.forceToolCall = false }
+
+        tools[0].forceToolCall = true
     }
 }

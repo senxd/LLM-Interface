@@ -29,9 +29,14 @@ class ToolFunction<R>(
     val name: String,
     val description: String,
     val parameters: MutableList<ToolParameter<*>>,
-    val responseName: String = "response",
-    var disabled: Boolean = false,
-    var force: Boolean = false,
+    /**
+     * If enabled, this function will not appear as part of the LLM's available tools.
+     */
+    var disableToolCall: Boolean = false,
+    /**
+     * Some models allow for forcing a certain function(s) to be called. Refer to the model documentation for reference.
+     */
+    var forceToolCall: Boolean = false,
     val response: (MutableList<ToolParameter<*>>) -> R
 )
 
@@ -54,17 +59,15 @@ open class ToolParameter<T>(val name: String, val description: String) : Copyabl
  *
  * @param functionName The name of the API function.
  * @param functionDescription A brief description of what the function does.
- * @param responseName The name of the response, default is "response".
  * @param response The lambda to execute for the response.
  * @return An instance of [ToolFunction] that wraps the provided lambda.
  */
 inline fun <R> Tool.Function(
     functionName: String,
     functionDescription: String,
-    responseName: String = "response",
     crossinline response: () -> R
 ): ToolFunction<R> = ToolFunction(
-    functionName, functionDescription, mutableListOf(), responseName
+    functionName, functionDescription, mutableListOf()
 ) {
     response()
 }.also {
@@ -77,7 +80,6 @@ inline fun <R> Tool.Function(
  * @param functionName The name of the API function.
  * @param functionDescription A brief description of what the function does.
  * @param functionParameters A list of parameters for the API function.
- * @param responseName The name of the response, default is "response".
  * @param response The lambda to execute for the response, taking a single parameter [P1].
  * @return An instance of [ToolFunction] that wraps the provided lambda.
  */
@@ -85,10 +87,9 @@ inline fun <P1, R> Tool.Function(
     functionName: String,
     functionDescription: String,
     functionParameters: MutableList<ToolParameter<*>>,
-    responseName: String = "response",
     crossinline response: (p1: P1) -> R
 ): ToolFunction<R> = ToolFunction(
-    functionName, functionDescription, functionParameters, responseName
+    functionName, functionDescription, functionParameters
 ) { parameters ->
     response(parameters[0].parameterValue as P1)
 }.also {
@@ -101,7 +102,6 @@ inline fun <P1, R> Tool.Function(
  * @param functionName The name of the API function.
  * @param functionDescription A brief description of what the function does.
  * @param functionParameters A list of parameters for the API function.
- * @param responseName The name of the response, default is "response".
  * @param response The lambda to execute for the response, taking parameters [P1] and [P2].
  * @return An instance of [ToolFunction] that wraps the provided lambda.
  */
@@ -109,10 +109,9 @@ inline fun <P1, P2, R> Tool.Function(
     functionName: String,
     functionDescription: String,
     functionParameters: MutableList<ToolParameter<*>>,
-    responseName: String = "response",
     crossinline response: (p1: P1, p2: P2) -> R
 ): ToolFunction<R> = ToolFunction(
-    functionName, functionDescription, functionParameters, responseName
+    functionName, functionDescription, functionParameters
 ) { parameters ->
     response(parameters[0].parameterValue as P1, parameters[1].parameterValue as P2)
 }.also {
@@ -125,7 +124,6 @@ inline fun <P1, P2, R> Tool.Function(
  * @param functionName The name of the API function.
  * @param functionDescription A brief description of what the function does.
  * @param functionParameters A list of parameters for the API function.
- * @param responseName The name of the response, default is "response".
  * @param response The lambda to execute for the response, taking parameters [P1], [P2], and [P3].
  * @return An instance of [ToolFunction] that wraps the provided lambda.
  */
@@ -133,10 +131,9 @@ inline fun <P1, P2, P3, R> Tool.Function(
     functionName: String,
     functionDescription: String,
     functionParameters: MutableList<ToolParameter<*>>,
-    responseName: String = "response",
     crossinline response: (p1: P1, p2: P2, p3: P3) -> R
 ): ToolFunction<R> = ToolFunction(
-    functionName, functionDescription, functionParameters, responseName
+    functionName, functionDescription, functionParameters
 ) { parameters ->
     response(parameters[0].parameterValue as P1, parameters[1].parameterValue as P2, parameters[2].parameterValue as P3)
 }.also {
@@ -149,7 +146,6 @@ inline fun <P1, P2, P3, R> Tool.Function(
  * @param functionName The name of the API function.
  * @param functionDescription A brief description of what the function does.
  * @param functionParameters A list of parameters for the API function.
- * @param responseName The name of the response, default is "response".
  * @param response The lambda to execute for the response, taking parameters [P1], [P2], [P3], and [P4].
  * @return An instance of [ToolFunction] that wraps the provided lambda.
  */
@@ -157,10 +153,9 @@ inline fun <P1, P2, P3, P4, R> Tool.Function(
     functionName: String,
     functionDescription: String,
     functionParameters: MutableList<ToolParameter<*>>,
-    responseName: String = "response",
     crossinline response: (p1: P1, p2: P2, p3: P3, p4: P4) -> R
 ): ToolFunction<R> = ToolFunction(
-    functionName, functionDescription, functionParameters, responseName
+    functionName, functionDescription, functionParameters
 ) { parameters ->
     response(
         parameters[0].parameterValue as P1,
@@ -178,7 +173,6 @@ inline fun <P1, P2, P3, P4, R> Tool.Function(
  * @param functionName The name of the API function.
  * @param functionDescription A brief description of what the function does.
  * @param functionParameters A list of parameters for the API function.
- * @param responseName The name of the response, default is "response".
  * @param response The lambda to execute for the response, taking parameters [P1], [P2], [P3], [P4], and [P5].
  * @return An instance of [ToolFunction] that wraps the provided lambda.
  */
@@ -186,10 +180,9 @@ inline fun <P1, P2, P3, P4, P5, R> Tool.Function(
     functionName: String,
     functionDescription: String,
     functionParameters: MutableList<ToolParameter<*>>,
-    responseName: String = "response",
     crossinline response: (p1: P1, p2: P2, p3: P3, p4: P4, p5: P5) -> R
 ): ToolFunction<R> = ToolFunction(
-    functionName, functionDescription, functionParameters, responseName
+    functionName, functionDescription, functionParameters
 ) { parameters ->
     response(
         parameters[0].parameterValue as P1,

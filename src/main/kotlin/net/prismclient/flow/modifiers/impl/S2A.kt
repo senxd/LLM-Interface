@@ -9,7 +9,7 @@ import net.prismclient.flow.modifiers.ModifierLocation
  *
  * @author Winter
  */
-class S2A : FlowModifier(ModifierLocation.INITIAL_PROMPT) {
+class S2A : FlowModifier(ModifierLocation.INITIAL_PROMPT, null) {
     override fun activate() {
         TODO("Not yet implemented")
     }
