@@ -2,6 +2,8 @@
 package net.prismclient.dsl
 
 import net.prismclient.chat.Chat
+import net.prismclient.execution.Action
+import net.prismclient.flow.Flow
 import net.prismclient.tools.Tool
 import net.prismclient.tools.ToolFunction
 import net.prismclient.tools.InlineTool
@@ -10,6 +12,8 @@ import net.prismclient.model.Message
 import net.prismclient.payload.MessagePayload
 import net.prismclient.prompt.Prompt
 import kotlin.properties.Delegates
+
+val DefaultModel: LLM  get() = ModelDSL.activeModel
 
 object ModelDSL {
     private val regex = Regex("""\d+\.\s""")
@@ -44,42 +48,46 @@ object ModelDSL {
 
     fun Message(prompt: String, initialPrompt: Prompt? = null): Message = Message(initialPrompt) { Include(prompt) }
 
-    // API
+    // Tools
     /**
-     * Adds the provided API(s) to any calls to the LLM. The APIs will automatically be removed after the block
+     * Adds the provided Tools(s) to any calls to the LLM. The Tools will automatically be removed after the block
      * is completed.
      */
-    inline fun API(vararg tool: Tool, action: (ModelDSL.() -> Unit)) {
-        activeModel.tools.forEach { if (!activeModel.tools.contains(it)) activeModel.tools += it }
+    inline fun Tool(vararg tool: Tool, action: (ModelDSL.() -> Unit)) {
+        Tool(tool = tool)
         ModelDSL.action()
         activeModel.tools -= tool
     }
 
     /**
-     * Adds the provided API(s) to any calls to the LLM.
+     * Adds the provided Tools(s) to any calls to the LLM.
      */
-    fun API(vararg tool: Tool) {
-        API(tool = tool) {}
+    fun Tool(vararg tool: Tool) {
+        activeModel.tools.forEach {
+            if (!activeModel.tools.contains(it))
+                return
+        }
+        activeModel.tools += tool
     }
 
     /**
-     * Removes the provided API(s) to any calls to the LLM.
+     * Removes the provided Tools(s) to any calls to the LLM.
      */
-    fun removeApi(vararg tool: Tool) {
+    fun removeTool(vararg tool: Tool) {
         activeModel.tools -= tool.toSet()
     }
 
     /**
-     * Removes all active APIs.
+     * Removes all active Tools.
      */
-    fun clearApis() {
+    fun clearTools() {
         activeModel.tools.clear()
     }
 
     /**
      * Creates an [ToolFunction] which returns [R] and has no parameters.
      *
-     * @param functionName The name of the API function.
+     * @param functionName The name of the Tool function.
      * @param functionDescription A brief description of what the function does.
      * @param responseName The name of the response, default is "response".
      * @param response The lambda to execute for the response.
@@ -95,7 +103,20 @@ object ModelDSL {
     ) {
         response()
     }.apply {
-        API(InlineTool)
+        Tool(InlineTool)
         InlineTool.toolFunctions.add(this)
     }
+
+    // NEW
+    val flow: Flow? = null
+
+    /**
+     * INTERNAL USE ONLY.
+     */
+    inline fun <A : Action> action(lambda: () -> A): A = lambda().also { flow?.actions?.add(it) }
+
+    inline fun Flow(lambda: Flow.() -> Unit): Flow =
+        Flow().also(lambda)
+
+//    inline fun Prompt(lambda: Prompt.() -> Unit): Prompt = action { Prompt().also(lambda) }
 }

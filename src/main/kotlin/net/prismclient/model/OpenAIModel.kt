@@ -2,10 +2,10 @@ package net.prismclient.model
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import net.prismclient.tools.Tool
 import net.prismclient.dsl.ModelDSL.response
 import net.prismclient.payload.MessagePayload
 import net.prismclient.payload.ResponsePayload
+import net.prismclient.tools.Tool
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -39,26 +39,50 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
     }
 
     override fun sendMessage(payload: MessagePayload): ResponsePayload {
+        var toolChoice: JSONObject? = null
         // Generate the tool request based on the OpenAPI spec
-        val tools = JSONArray().apply {
+        val activeTools = JSONArray().apply {
             tools.forEach { tool ->
-                tool.toolFunctions.forEach { function ->
+                tool.toolFunctions.filter { !it.disabled }.forEach { function ->
                     put(JSONObject().apply {
-                        put("name", function.name)
-                        put("description", function.description)
-                        obj("parameters") {
-                            put("type", "object")
-                            put("required", JSONArray(function.parameters.map { it.name }))
-                            obj("properties") {
-                                function.parameters.forEach { parameter ->
-                                    obj(parameter.name) {
-                                        put("type", "string")
-                                        put("description", parameter.description)
+                        put("type", "function")
+                        obj("function") {
+                            put("name", function.name)
+                            put("description", function.description)
+                            obj("parameters") {
+                                put("type", "object")
+                                put("required", JSONArray(function.parameters.map { it.name }))
+                                obj("properties") {
+                                    function.parameters.forEach { parameter ->
+                                        obj(parameter.name) {
+                                            put("type", "string")
+                                            put("description", parameter.description)
+                                        }
                                     }
                                 }
                             }
                         }
                     })
+
+                    // If the function wants to be required to be make toolChoice non-null
+                    // based on the function and check if there is already a forced function
+                    // as it seems that OpenAI prohibits more than one forced function.
+                    if (function.force) {
+                        if (toolChoice != null) {
+                            println(
+                                "Multiple forced functions being used, preferring ${function.name} over ${
+                                    toolChoice!!.getJSONObject("function").getString("name")
+                                }"
+                            )
+                        } else {
+                            toolChoice = JSONObject().apply {
+                                put("type", "function")
+                                put("function", JSONObject().apply {
+                                    put("name", function.name)
+                                })
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -74,26 +98,31 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
 
         messageHistory.put(messageObject("user", payload.message.prompt.rawPrompt.toString()))
 
-        return sendMessage(messageHistory, if (this.tools.isNotEmpty()) tools else null)
+        return sendMessage(messageHistory, activeTools, toolChoice)
     }
 
     private fun messageObject(role: String, content: String) = JSONObject().apply {
         put("role", role)
         put("content", content)
+//        put("content", JSONArray().apply{ put(JSONObject().apply {
+//            put("type", "text")
+//            put("text", content)
+//        }) } )
     }
 
-    private fun sendMessage(messageHistory: JSONArray, tools: JSONArray? = null, attempt: Int = 0): ResponsePayload {
+    private fun sendMessage(
+        messageHistory: JSONArray, tools: JSONArray? = null, toolChoice: JSONObject? = null, attempt: Int = 0
+    ): ResponsePayload {
         val json = JSONObject().apply {
             put("model", modelName)
             put("messages", messageHistory)
-            if (tools != null) put("functions", tools)
+            put("tool_choice", toolChoice)
+            put("tools", tools)
         }
 
-        val request = Request.Builder()
-            .url("https://api.openai.com/v1/chat/completions")
+        val request = Request.Builder().url("https://api.openai.com/v1/chat/completions")
             .addHeader("Authorization", "Bearer $apiKey")
-            .post(json.toString().toRequestBody("application/json; charset=utf-8".toMediaType()))
-            .build()
+            .post(json.toString().toRequestBody("application/json; charset=utf-8".toMediaType())).build()
 
         val result = StringBuilder()
         val latch = CountDownLatch(1)
@@ -105,22 +134,25 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
 
                     val errorCode = response.code
 
-                    when (errorCode) {
-                        /* Auth */
-                        401 -> throw RuntimeException("Invalid OpenAI authentication key.")
-                        /* Rate Limit */
+                    when (errorCode) {/* Auth */
+                        401 -> throw RuntimeException("Invalid OpenAI authentication key.")/* Rate Limit */
                         429 -> {
                             if (rateLimitDelay != -1L && attempt + 1 > maxResendingAttempts) {
                                 runBlocking {
                                     delay(rateLimitDelay)
 
-                                    sendMessage(messageHistory, tools, attempt + 1)
+                                    sendMessage(messageHistory, tools, toolChoice, attempt + 1)
                                 }
                             }
                         }
-
                     }
-                    throw RuntimeException("Failed to send message. Error Code: $errorCode, Attempts: $attempt")
+                    throw RuntimeException(
+                        "Failed to send message. Error Code: $errorCode, Attempts: $attempt\n${
+                            json.toString(
+                                1
+                            )
+                        }, Error: ${response.body?.string()}"
+                    )
                 }
 
                 val responseBody = it.body?.string()
@@ -128,16 +160,13 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
                 val choices = jsonResponse.getJSONArray("choices")
                 val responseMessage = choices.getJSONObject(0).getJSONObject("message")
                 val messageContent = responseMessage.optString("content")
-                // OpenAI calls it "tools," but the JSON response is "function"
-                val functionCall = responseMessage.optJSONObject("function_call")
 
                 // Append the result of the response. If it is a function call,
                 // append the result of the resulting call from ChatGPT after
                 // return the value of the function it wants.
-                functionCall?.let {
-                    // TODO: Allow for multiple functions to be called in a single request
-                    result.append(handleAPICalls(responseMessage, messageHistory))
-                } ?: result.append(messageContent)
+                result.append(responseMessage.optJSONArray("tool_calls")?.let {
+                    handleToolCalls(responseMessage, messageHistory)
+                } ?: messageContent)
                 latch.countDown()
             }
         }
@@ -152,86 +181,52 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
      *
      * @see [Tool]
      */
-    private fun handleAPICalls(response: JSONObject, messageHistory: JSONArray): String {
-        val functionCall = response.optJSONObject("function_call")
-        val functionName = functionCall.getString("name")
-        // Chat-GPT prefers to write the arguments as a String
-        // instead of as an actual JSON Structure, so it must
-        // be parsed as a String and converted into a JSON Object
-        val functionArguments = JSONObject(functionCall.getString("arguments"))
+    private fun handleToolCalls(response: JSONObject, messageHistory: JSONArray): String {
+        val toolCalls = response.getJSONArray("tool_calls")
 
-        messageHistory.put(response)
+        // Add the tool call to the message history
+        messageHistory.put(JSONObject().apply {
+            put("role", "assistant")
+            put("content", "")
+            put("tool_calls", toolCalls)
+        })
 
-        // Find the corresponding function based on the functionName.
-        // This should be changed in the future to also identify the
-        // exact API used due to potential naming conflicts. Alternatively,
-        // I presume it automatically picks the first defined API, so Priority
-        // will take place, but a warning should be mentioned in an additional
-        // check when adding APIs to mention naming conflicts.
-        var tool: Tool by Delegates.notNull()
-        val mappedFunction =
-            tools.firstNotNullOfOrNull { it.toolFunctions.find { f -> tool = it; f.name == functionName } }
-                ?: throw NullPointerException("Function $functionName not found within APIs")
+        for (i in 0 until toolCalls.length()) {
+            val function = toolCalls.getJSONObject(i).getJSONObject("function")
+            val functionName = function.getString("name")
+            val arguments = JSONObject(function.getString("arguments"))
 
-        // Map the parameters provided by the response from
-        // ChatGPT to the APIParameters of the mapped function.
-        val mappedParameters = mappedFunction.parameters
-            .map {
-                // Create a copy of the parameter
+            var tool: Tool by Delegates.notNull()
+            val mappedFunction =
+                tools.firstNotNullOfOrNull { it.toolFunctions.find { f -> tool = it; f.name == functionName } }
+                    ?: throw NullPointerException("Function $functionName not found within Tools")
+
+            val mappedParameters = mappedFunction.parameters.map {
                 it.copy().apply {
-                    // Since the generic type is not known at runtime,
-                    // an additional function is added to APIFunction
-                    // to accept Any? which will cast to the return type.
-                    castToParameter(functionArguments.getString(name))
+                    castToParameter(arguments.getString(name))
                 }
             }.toTypedArray().toMutableList()
-
-        // Call the internal lambda function of the
-        // APIFunction with the mapped parameters.
-        val r = mappedFunction.response(mappedParameters)
-//        Logger.debug(
-//            FunctionMarker,
-//            "Invoked function {} from API {} with parameters",
-//            mappedFunction.functionName,
-//            api::class.java.name
-//        )
-//        mappedParameters.forEach {
-//            Logger.debug(
-//                FunctionMarker,
-//                "\t\"{}\" : \"{}\" of type {}",
-//                it.parameterName,
-//                it.parameterValue,
-//                it.parameterValue!!::class.java.simpleName
-//            )
-//        }
-
-        // Given the function response, add a new message based
-        // on the response and send it back to the LLM
-        messageHistory.put(
-            JSONObject().apply {
-                put("role", "function")
+            val functionResponse = mappedFunction.response(mappedParameters)
+            messageHistory.put(JSONObject().apply {
+                put("role", "tool")
+                put("content", functionResponse.toString())
                 put("name", functionName)
-                put("content", "{\"${mappedFunction.responseName}\": \"$r\"}")
-            }
-        )
-
+                put("tool_call_id", toolCalls.getJSONObject(i).getString("id"))
+            })
+        }
         return sendMessage(messageHistory).response
     }
+
 
     private fun call(request: Request, callback: (response: Response) -> Unit) {
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 e.printStackTrace()
-//                Logger.warn(e)
             }
 
             override fun onResponse(call: Call, response: Response) {
                 callback(response)
             }
         })
-    }
-
-    override fun sendRawMessage(payload: MessagePayload): ResponsePayload {
-        TODO("Not implemented")
     }
 }

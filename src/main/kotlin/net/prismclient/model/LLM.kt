@@ -20,11 +20,6 @@ abstract class LLM(val modelName: String, val modelVersion: String) {
     abstract fun sendMessage(payload: MessagePayload): ResponsePayload
 
     /**
-     * Sends the provided message to the LLM. Does not include any API or other prompts.
-     */
-    abstract fun sendRawMessage(payload: MessagePayload): ResponsePayload
-
-    /**
      * If there are any active APIs, a prompt will be generated based on their requirements. Empty string will be
      * returned if no APIs are currently active.
      */

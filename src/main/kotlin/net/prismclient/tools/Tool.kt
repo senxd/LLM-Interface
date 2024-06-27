@@ -13,12 +13,6 @@ import net.prismclient.util.Copyable
  */
 abstract class Tool {
     var toolFunctions: MutableList<ToolFunction<*>> = mutableListOf()
-
-    /**
-     * Returns the prompt to be injected into the LLM query. Can be used to add additional information / documentation
-     * about the API for the LLM to use prior to using it.
-     */
-    //abstract fun injectionPrompt(): String
 }
 
 /**
@@ -36,6 +30,8 @@ class ToolFunction<R>(
     val description: String,
     val parameters: MutableList<ToolParameter<*>>,
     val responseName: String = "response",
+    var disabled: Boolean = false,
+    var force: Boolean = false,
     val response: (MutableList<ToolParameter<*>>) -> R
 )
 

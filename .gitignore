@@ -23,3 +23,4 @@ gradle-app.setting
 .DS_Store
 .idea/
 src/test/kotlin/Test.kt
+/src/main/resources/ragas

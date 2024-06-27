@@ -18,6 +18,10 @@ inline fun Model(model: LLM, action: ModelDSL.() -> Unit) {
     ModelDSL.activeModel = model
     ModelDSL.action()
 }
+//inline fun <T : LLM> Model(model: T, action: T.() -> Unit) {
+//    model.action()
+////    ModelDSL.action()
+//}
 
 /**
  * Returns a [File] representation of the String file from the resources folder of the project.
