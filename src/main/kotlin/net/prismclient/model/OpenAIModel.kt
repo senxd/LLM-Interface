@@ -52,7 +52,7 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
         // Generate the tool request based on the OpenAPI spec
         val activeTools = JSONArray().apply {
             tools.forEach { tool ->
-                tool.toolFunctions.filter { !it.disableToolCall }.forEach { function ->
+                tool.functions.filter { !it.disabled }.forEach { function ->
                     put(JSONObject().apply {
                         put("type", "function")
                         obj("function") {
@@ -76,7 +76,7 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
                     // If the function wants to be required to be make toolChoice non-null
                     // based on the function and check if there is already a forced function
                     // as it seems that OpenAI prohibits more than one forced function.
-                    if (function.forceToolCall) {
+                    if (function.forceCall) {
                         if (toolChoice != null) {
                             println(
                                 "Multiple forced functions being used, preferring ${function.name} over ${
@@ -203,12 +203,12 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
 
             var tool: Tool by Delegates.notNull()
             val mappedFunction =
-                tools.firstNotNullOfOrNull { it.toolFunctions.find { f -> tool = it; f.name == functionName } }
+                tools.firstNotNullOfOrNull { it.functions.find { f -> tool = it; f.name == functionName } }
                     ?: throw NullPointerException("Function $functionName not found within Tools")
 
             val mappedParameters = mappedFunction.parameters.map {
                 it.copy().apply {
-                    castToParameter(arguments.getString(name))
+                    castTo(arguments.getString(name))
                 }
             }.toTypedArray().toMutableList()
             val functionResponse = mappedFunction.response(mappedParameters)
@@ -242,10 +242,10 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
         // forced. It is still possible to have multiple tools
         // being forced and in this case, the last ToolFunction
         // of a Tool and last Tool within tools will be preferred.
-        this.tools.flatMap { it.toolFunctions }
-            .filter { it.forceToolCall }
-            .forEach { it.forceToolCall = false }
+        this.tools.flatMap { it.functions }
+            .filter { it.forceCall }
+            .forEach { it.forceCall = false }
 
-        tools[0].forceToolCall = true
+        tools[0].forceCall = true
     }
 }

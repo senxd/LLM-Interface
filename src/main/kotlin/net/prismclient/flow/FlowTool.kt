@@ -1,5 +1,7 @@
 package net.prismclient.flow
 
+import net.prismclient.tools.Function
+import net.prismclient.tools.Parameter
 import net.prismclient.tools.Tool
 
 /**
@@ -8,5 +10,12 @@ import net.prismclient.tools.Tool
  * @author Winter
  */
 class FlowTool : Tool() {
-//    val createStep
+    val createStep = Function(
+        name = "createStep",
+        description = "",
+        Parameter("name", ""),
+        Parameter("", "")
+    ) { name: String, description: String ->
+        ""
+    }
 }

@@ -1,4 +1,8 @@
 // IMPROVE: Add ability to define parameters, so the same flow can be executed with different datasets, etc...
+//	•	Step: A specific phase or action in the sequence of solving a problem.
+//	•	Action: A task or series of tasks that need to be executed.
+//	•	Task: A singular action or unit of work within the process.
+//	•	Stage: A broader phase that may encompass multiple steps or tasks within the process.
 package net.prismclient.flow
 
 import net.prismclient.execution.Action

@@ -1,5 +1,6 @@
 import net.prismclient.model.OpenAIModel
-import net.prismclient.tools.ExampleTool
+import net.prismclient.tools.Function
+import net.prismclient.tools.Parameter
 import net.prismclient.util.Model
 
 fun main() {
@@ -7,7 +8,14 @@ fun main() {
 
     Model(OpenAIModel("gpt-4o", apiKey)) {
         Chat {
-            Tool(ExampleTool)
+            Function(
+                "getWeatherCondition",
+                "Returns the weather condition given the location",
+                Parameter("Location", "Weather Location (City)")
+            ) { location: String ->
+                println("Retrieving condition for $location")
+                listOf("Sunny", "Rainy", "Cloudy", "Hailing", "Overcast").random()
+            }
 
             val message = Message("What is the time and weather condition in Los Angeles and San Francisco")
 

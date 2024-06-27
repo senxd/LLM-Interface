@@ -18,6 +18,8 @@ import net.prismclient.tools.ToolFunction
 abstract class LLM(val modelName: String, val modelVersion: String) {
     val tools: MutableList<Tool> = mutableListOf()
 
+    protected var inlineTools: InlineTool? = null
+
     abstract fun establishConnection()
 
     /**
@@ -31,6 +33,15 @@ abstract class LLM(val modelName: String, val modelVersion: String) {
      */
     open fun generateAPIPrompt(): String {
         throw RuntimeException("Generating API prompts is not supported for ${this::class.simpleName}")
+    }
+
+    open fun addInlineTool(tool: ToolFunction<*>) {
+        inlineTools = inlineTools ?: InlineTool().apply { Tool(this) }
+        inlineTools!!.functions.add(tool)
+    }
+
+    open fun removeInlineTool(tool: ToolFunction<*>) {
+        inlineTools?.functions?.find { it == tool }?.let { inlineTools!!.functions.remove(it) }
     }
 
     /**
@@ -93,7 +104,7 @@ abstract class LLM(val modelName: String, val modelVersion: String) {
     inline fun Force(vararg tools: ToolFunction<*>, lambda: () -> Unit) {
         Force(*tools)
         lambda()
-        tools.forEach { it.forceToolCall = false }
+        tools.forEach { it.forceCall = false }
     }
 
     /**
@@ -101,29 +112,6 @@ abstract class LLM(val modelName: String, val modelVersion: String) {
      */
     fun Force(vararg tools: ToolFunction<*>) {
         forceTool(*tools)
-    }
-
-    /**
-     * Creates an [ToolFunction] which returns [R] and has no parameters.
-     *
-     * @param functionName The name of the Tool function.
-     * @param functionDescription A brief description of what the function does.
-     * @param responseName The name of the response, default is "response".
-     * @param response The lambda to execute for the response.
-     * @return An instance of [ToolFunction] that wraps the provided lambda.
-     */
-    inline fun <R> Function(
-        functionName: String,
-        functionDescription: String,
-        responseName: String = "response",
-        crossinline response: () -> R
-    ): ToolFunction<R> = ToolFunction(
-        functionName, functionDescription, mutableListOf()
-    ) {
-        response()
-    }.apply {
-        Tool(InlineTool)
-        InlineTool.toolFunctions.add(this)
     }
 
     // NEW
