@@ -13,6 +13,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
 
 /**
@@ -25,7 +26,7 @@ import kotlin.properties.Delegates
  * @author Winter
  */
 class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace("gpt-", "")) {
-    private val client = OkHttpClient()
+    private val client = OkHttpClient().newBuilder().readTimeout(60, TimeUnit.SECONDS).build()
 
     /**
      * If the package fails to send to OpenAI's servers due to a 429 error (rate limit), it will automatically resend
@@ -50,7 +51,7 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
     override fun sendMessage(payload: MessagePayload): ResponsePayload {
         var toolChoice: JSONObject? = null
         // Generate the tool request based on the OpenAPI spec
-        val activeTools = JSONArray().apply {
+        val activeTools: JSONArray? = if (tools.isEmpty()) null else JSONArray().apply {
             tools.forEach { tool ->
                 tool.functions.filter { !it.disabled }.forEach { function ->
                     put(JSONObject().apply {
@@ -121,8 +122,10 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
         val json = JSONObject().apply {
             put("model", modelName)
             put("messages", messageHistory)
-            put("tool_choice", toolChoice)
-            put("tools", tools)
+            if (tools != null) {
+                put("tool_choice", toolChoice)
+                put("tools", tools)
+            }
         }
 
         val request = Request.Builder().url("https://api.openai.com/v1/chat/completions")
@@ -139,8 +142,8 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
 
                     val errorCode = response.code
 
-                    when (errorCode) {/* Auth */
-                        401 -> throw RuntimeException("Invalid OpenAI authentication key.")/* Rate Limit */
+                    when (errorCode) {
+                        401 -> throw RuntimeException("Invalid OpenAI authentication key.")
                         429 -> {
                             if (rateLimitDelay != -1L && attempt + 1 > maxResendingAttempts) {
                                 runBlocking {
@@ -242,9 +245,7 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
         // forced. It is still possible to have multiple tools
         // being forced and in this case, the last ToolFunction
         // of a Tool and last Tool within tools will be preferred.
-        this.tools.flatMap { it.functions }
-            .filter { it.forceCall }
-            .forEach { it.forceCall = false }
+        this.tools.flatMap { it.functions }.filter { it.forceCall }.forEach { it.forceCall = false }
 
         tools[0].forceCall = true
     }

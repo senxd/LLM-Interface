@@ -10,12 +10,14 @@ import net.prismclient.tools.Tool
  * @author Winter
  */
 class FlowTool : Tool() {
+    val steps = HashMap<String, String>()
     val createStep = Function(
         name = "createStep",
         description = "",
-        Parameter("name", ""),
-        Parameter("", "")
+        Parameter("Step Name", "The name of the step"),
+        Parameter("Step Description", "Overview/Description of the Step")
     ) { name: String, description: String ->
-        ""
+        steps[name] = description
+        "Success"
     }
 }

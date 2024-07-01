@@ -1,3 +1,4 @@
+// TODO: Merge with Message and save Prompt for literal text storage.
 package net.prismclient.prompt
 
 import net.prismclient.execution.Element

@@ -101,8 +101,8 @@ abstract class LLM(val modelName: String, val modelVersion: String) {
     /**
      * Forces the given [tools] to be called within the [lambda].
      */
-    inline fun Force(vararg tools: ToolFunction<*>, lambda: () -> Unit) {
-        Force(*tools)
+    inline fun force(vararg tools: ToolFunction<*>, lambda: () -> Unit) {
+        force(*tools)
         lambda()
         tools.forEach { it.forceCall = false }
     }
@@ -110,7 +110,7 @@ abstract class LLM(val modelName: String, val modelVersion: String) {
     /**
      * Forces the given [tools] to be called.
      */
-    fun Force(vararg tools: ToolFunction<*>) {
+    fun force(vararg tools: ToolFunction<*>) {
         forceTool(*tools)
     }
 
