@@ -23,6 +23,11 @@ class Message {
 
     fun LocalPrompt(name: String) = Include(File(localPromptFolder, "$name.txt").readText())
 
+    /**
+     * An alternative method to invoke [Include].
+     */
+    operator fun plus(prompt: String) = Include(prompt)
+
     companion object {
         var localPromptFolder = "prompts".localResource
     }
