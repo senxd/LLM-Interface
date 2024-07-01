@@ -58,13 +58,13 @@ abstract class LLM(val modelName: String, val modelVersion: String) {
             action(this)
         }
 
-    inline fun Chat.Message(initialPrompt: Prompt? = null, action: Message.() -> Unit): Message = Message().also { message ->
+    inline fun Chat.Message(action: Message.() -> Unit): Message = Message().also { message ->
         action(message)
         message.responsePayload = sendMessage(MessagePayload(chat = this, message = message))
         addMessage(message)
     }
 
-    fun Chat.Message(prompt: String, initialPrompt: Prompt? = null): Message = Message(initialPrompt) { Include(prompt) }
+    fun Chat.Message(prompt: String): Message = Message { Include(prompt) }
 
     // Tools
     /**

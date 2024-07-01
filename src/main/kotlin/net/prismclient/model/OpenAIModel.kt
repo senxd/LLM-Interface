@@ -11,23 +11,22 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.IOException
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
 
 /**
  * The [LLM] class for using Open AI (gpt series only) models.
  *
  * The [Tool] system fully supported with multiple calls being possible in a single request, however, if a tool is
- * [ToolFunction.forceToolCall], only that tool will be called, and only once. This is a limitation of the API and
+ * [ToolFunction.forceCall], only that tool will be called, and only once. This is a limitation of the API and
  * cannot be "fixed."
  *
  * @author Winter
  */
-class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace("gpt-", "")) {
-    private val client = OkHttpClient().newBuilder().readTimeout(60, TimeUnit.SECONDS).build()
-
+class OpenAIModel(
+    model: String,
+    val apiKey: String
+) : OkHttpLLM(model, model.replace("gpt-", "")) {
     /**
      * If the package fails to send to OpenAI's servers due to a 429 error (rate limit), it will automatically resend
      * after the delay has passed. Set to -1 to disable resending.
@@ -39,14 +38,7 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
      */
     var maxResendingAttempts = 3
 
-    override fun establishConnection() {
-        // ...
-    }
-
-    // TODO: Move somewhere else
-    inline fun JSONObject.obj(name: String, lambda: JSONObject.() -> Unit) {
-        put(name, JSONObject().apply(lambda))
-    }
+    override fun establishConnection() { /* ... */ }
 
     override fun sendMessage(payload: MessagePayload): ResponsePayload {
         var toolChoice: JSONObject? = null
@@ -111,11 +103,6 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
         return sendMessage(messageHistory, activeTools, toolChoice)
     }
 
-    private fun messageObject(role: String, content: String) = JSONObject().apply {
-        put("role", role)
-        put("content", content)
-    }
-
     private fun sendMessage(
         messageHistory: JSONArray, tools: JSONArray? = null, toolChoice: JSONObject? = null, attempt: Int = 0
     ): ResponsePayload {
@@ -128,7 +115,8 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
             }
         }
 
-        val request = Request.Builder().url("https://api.openai.com/v1/chat/completions")
+        val request = Request.Builder()
+            .url("https://api.openai.com/v1/chat/completions")
             .addHeader("Authorization", "Bearer $apiKey")
             .post(json.toString().toRequestBody("application/json; charset=utf-8".toMediaType())).build()
 
@@ -223,19 +211,6 @@ class OpenAIModel(model: String, val apiKey: String) : LLM(model, model.replace(
             })
         }
         return sendMessage(messageHistory).response
-    }
-
-
-    private fun call(request: Request, callback: (response: Response) -> Unit) {
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                e.printStackTrace()
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                callback(response)
-            }
-        })
     }
 
     override fun forceTool(vararg tools: ToolFunction<*>) {

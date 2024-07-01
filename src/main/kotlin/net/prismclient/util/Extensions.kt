@@ -13,6 +13,7 @@ import java.io.File
  * Creates a new block given the [LLM]. Is used as the basis for interfacing with this Library.
  */
 inline fun <T : LLM> Model(model: T, action: T.() -> Unit) {
+    model.establishConnection()
     model.action()
 }
 
