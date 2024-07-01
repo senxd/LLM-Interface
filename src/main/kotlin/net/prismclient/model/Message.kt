@@ -26,7 +26,7 @@ class Message {
     /**
      * An alternative method to invoke [Include].
      */
-    operator fun plus(prompt: String) = Include(prompt)
+    operator fun String.unaryPlus() = Include(this)
 
     companion object {
         var localPromptFolder = "prompts".localResource
