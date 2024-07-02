@@ -25,8 +25,10 @@ import kotlin.properties.Delegates
  */
 class OpenAIModel(
     model: String,
-    val apiKey: String
-) : OkHttpLLM(model, model.replace("gpt-", "")) {
+    val apiKey: String,
+    // TODO: Allow for adjusting on the fly
+    readTimeout: Int = 30
+) : OkHttpLLM(model, model.replace("gpt-", ""), readTimeout) {
     /**
      * If the package fails to send to OpenAI's servers due to a 429 error (rate limit), it will automatically resend
      * after the delay has passed. Set to -1 to disable resending.
