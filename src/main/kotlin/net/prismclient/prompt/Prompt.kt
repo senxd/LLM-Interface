@@ -1,9 +1,21 @@
+// TODO: Merge with Message and save Prompt for literal text storage.
 package net.prismclient.prompt
 
-class Prompt {
+import net.prismclient.execution.Element
+
+class Prompt : Element {
     val rawPrompt = StringBuilder()
+    var responseFormat: ResponseFormat? = null
 
     fun merge(prompt: Prompt) {
         rawPrompt.append(prompt.rawPrompt)
+    }
+
+    operator fun String.unaryPlus() {
+        rawPrompt.append(this)
+    }
+
+    operator fun String.unaryMinus() {
+        responseFormat = ResponseFormat(this)
     }
 }

@@ -1,6 +1,5 @@
-package net.prismclient.document.type
+package net.prismclient.document.type.text
 
-import net.prismclient.document.Document
 import java.io.File
 import java.io.StringReader
 import javax.swing.text.html.HTMLEditorKit
@@ -11,7 +10,7 @@ import javax.swing.text.rtf.RTFEditorKit
  *
  * @author Winter
  */
-class GenericText(file: File) : Document(file, "txt", "rtf") {
+class GenericText(file: File) : TextDocument(file, "txt", "rtf") {
     override fun extract(): String = Builder {
         append(file.readText().let { if (extension == "rtf") unformatRTF(it) else it })
     }

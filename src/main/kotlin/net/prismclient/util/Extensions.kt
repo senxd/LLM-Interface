@@ -4,19 +4,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
-import net.prismclient.document.Document
+import net.prismclient.document.type.text.TextDocument
 import net.prismclient.model.Message
 import net.prismclient.model.LLM
-import net.prismclient.dsl.ModelDSL
-import net.prismclient.payload.MessagePayload
 import java.io.File
 
 /**
  * Creates a new block given the [LLM]. Is used as the basis for interfacing with this Library.
  */
-inline fun Model(model: LLM, action: ModelDSL.() -> Unit) {
-    ModelDSL.activeModel = model
-    ModelDSL.action()
+inline fun <T : LLM> Model(model: T, action: T.() -> Unit) {
+    model.establishConnection()
+    model.action()
 }
 
 /**
@@ -37,7 +35,7 @@ val String.localResource: File
 //val Message.messagePayload: MessagePayload
 //    get() = MessagePayload(StringBuilder(""))
 
-fun <T : Document> Array<T>.batchExecute(exec: (document: T) -> Unit) {
+fun <T : TextDocument> Array<T>.batchExecute(exec: (document: T) -> Unit) {
     runBlocking {
         this@batchExecute.map { document ->
             async(Dispatchers.Default) {
