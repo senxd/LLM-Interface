@@ -5,25 +5,6 @@ _This project is a work in progress and is not expected to use in a production p
 This project provides a framework for utilizing LLMs in a structured way in Kotlin through the use of DSLs. You can
 either bring your own LLM by extending the `LLM` class or use a pre-existing such as `OpenAIModel`.
 
-An example project with a basic back and forward chat:
-
-```kotlin
-Model(OpenAIModel(model = "gpt-3.5-turbo", apiKey = "...")) {
-    Chat(useMessageHistory = true /* Include previous messages when sending requests to the LLM */) {
-        // API Which provides a function to get the current time defined locally.
-        API(ExampleAPI)
-        
-        Message("What are your thoughts on Aristotle and Plato?")
-        println(Message("What were just talking about, and what is the time?").response)
-        println(Message("Before I asked about the time, what were we talking about?").response)
-      
-        // Response:
-        // a. We were discussing Aristotle and Plato and their contributions to philosophy. The current time is 3:30.
-        // b. Before you asked about the time, we were discussing Shakespeare and his significance as a playwright and poet.
-    }
-}
-```
-
 # Features
 _This list is non-exhaustive and subject to change._
 - [x] Basic prompting (send message, receive message)
