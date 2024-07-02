@@ -5,19 +5,20 @@ package net.prismclient.document
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import net.prismclient.document.type.text.TextDocument
 import java.io.File
 
 /**
- * A utility class used for extracting a folder of [Document]s.
+ * A utility class used for extracting a folder of [TextDocument]s.
  *
  * @author Winter
  */
-class BatchExtraction(private val documents: ArrayList<Document>) {
+class BatchExtraction(private val documents: ArrayList<TextDocument>) {
     /**
-     * Given a [folder], add all documents with the provided [extension](s) based the specified [Document] type defined
+     * Given a [folder], add all documents with the provided [extension](s) based the specified [TextDocument] type defined
      * by [map].
      */
-    constructor(folder: File, vararg extension: String, map: (file: File) -> Document) : this(arrayListOf()) {
+    constructor(folder: File, vararg extension: String, map: (file: File) -> TextDocument) : this(arrayListOf()) {
         if (!folder.isDirectory || !folder.exists())
             throw RuntimeException("$folder, file path: ${folder.absolutePath} is not a directory or does not exist.")
 
@@ -27,18 +28,18 @@ class BatchExtraction(private val documents: ArrayList<Document>) {
         filteredFiles.forEach { file -> documents.add(map(file)) }
     }
 
-    fun addDocument(document: Document) {
+    fun addDocument(document: TextDocument) {
         documents += document
     }
 
-    fun removeDocument(document: Document) {
+    fun removeDocument(document: TextDocument) {
         documents -= document
     }
 
     /**
      * Applies the [lambda] to every document in the execution.
      */
-    fun extract(poolSize: Int = 10, delay: Long = 0L, lambda: Document.(extractedText: String) -> Unit) {
+    fun extract(poolSize: Int = 10, delay: Long = 0L, lambda: TextDocument.(extractedText: String) -> Unit) {
         val semaphore = Semaphore(poolSize)
 
         runBlocking {

@@ -25,3 +25,4 @@ gradle-app.setting
 src/test/kotlin/Test.kt
 /src/main/resources/ragas
 src/test/kotlin/LocalModelTest.kt
+src/main/resources/spr.xlsx

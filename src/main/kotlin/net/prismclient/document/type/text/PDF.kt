@@ -3,13 +3,12 @@
 // IDEA: Validation of processed text -> with LLMs? (Emending)
 // FUTURE: Use different OCR Library for GPU based processing (massive documents).
 // TODO: Debug markers
-package net.prismclient.document.type
+package net.prismclient.document.type.text
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
-import net.prismclient.document.Document
 import net.prismclient.util.localResource
 import net.sourceforge.tess4j.Tesseract
 import net.sourceforge.tess4j.TesseractException
@@ -24,7 +23,7 @@ import java.io.File
  *
  * @author Winter
  */
-class PDF(pdfLocation: File) : Document(pdfLocation, "pdf") {
+class PDF(pdfLocation: File) : TextDocument(pdfLocation, "pdf") {
     /**
      * Specifies the language to use for OCR based text extraction (tess4j).
      *

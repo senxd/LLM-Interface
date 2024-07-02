@@ -1,6 +1,5 @@
-package net.prismclient.document.type
+package net.prismclient.document.type.text
 
-import net.prismclient.document.Document
 import org.apache.poi.xwpf.usermodel.XWPFDocument
 import java.io.File
 import java.io.FileInputStream
@@ -10,7 +9,7 @@ import java.io.FileInputStream
  *
  * @author Winter
  */
-class Docx(fileLocation: File) : Document(fileLocation, "docx", "doc") {
+class Docx(fileLocation: File) : TextDocument(fileLocation, "docx", "doc") {
     override fun extract(): String = Builder {
         FileInputStream(file).use {
             XWPFDocument(FileInputStream(file)).use { document ->

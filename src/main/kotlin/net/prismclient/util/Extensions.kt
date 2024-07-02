@@ -4,7 +4,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
-import net.prismclient.document.Document
+import net.prismclient.document.type.text.TextDocument
 import net.prismclient.model.Message
 import net.prismclient.model.LLM
 import java.io.File
@@ -35,7 +35,7 @@ val String.localResource: File
 //val Message.messagePayload: MessagePayload
 //    get() = MessagePayload(StringBuilder(""))
 
-fun <T : Document> Array<T>.batchExecute(exec: (document: T) -> Unit) {
+fun <T : TextDocument> Array<T>.batchExecute(exec: (document: T) -> Unit) {
     runBlocking {
         this@batchExecute.map { document ->
             async(Dispatchers.Default) {
