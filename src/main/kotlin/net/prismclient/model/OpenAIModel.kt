@@ -226,4 +226,10 @@ class OpenAIModel(
 
         tools[0].forceCall = true
     }
+
+    override fun handleCallException(exception: Exception, request: Request, callback: (response: Response) -> Unit) {
+        super.handleCallException(exception, request, callback)
+        // Obviously if it doesn't work once, try again!
+        call(request, callback)
+    }
 }

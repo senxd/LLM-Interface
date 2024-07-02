@@ -26,14 +26,22 @@ abstract class OkHttpLLM(modelName: String, modelVersion: String, readTimeout: I
     }
 
     protected fun call(request: Request, callback: (response: Response) -> Unit) {
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                e.printStackTrace()
-            }
+        try {
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    e.printStackTrace()
+                }
 
-            override fun onResponse(call: Call, response: Response) {
-                callback(response)
-            }
-        })
+                override fun onResponse(call: Call, response: Response) {
+                    callback(response)
+                }
+            })
+        } catch(exception: Exception) {
+            handleCallException(exception, request, callback)
+        }
+    }
+
+    open fun handleCallException(exception: Exception, request: Request, callback: (response: Response) -> Unit) {
+        exception.printStackTrace()
     }
 }
