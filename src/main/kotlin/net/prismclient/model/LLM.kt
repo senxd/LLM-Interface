@@ -5,7 +5,6 @@ import net.prismclient.execution.Action
 import net.prismclient.flow.Flow
 import net.prismclient.payload.MessagePayload
 import net.prismclient.payload.ResponsePayload
-import net.prismclient.prompt.Prompt
 import net.prismclient.tools.InlineTool
 import net.prismclient.tools.Tool
 import net.prismclient.tools.ToolFunction
@@ -36,7 +35,7 @@ abstract class LLM(val modelName: String, val modelVersion: String) {
     }
 
     open fun addInlineTool(tool: ToolFunction<*>) {
-        inlineTools = inlineTools ?: InlineTool().apply { Tool(this) }
+        inlineTools = inlineTools ?: InlineTool().apply { tool(this) }
         inlineTools!!.functions.add(tool)
     }
 
@@ -50,7 +49,7 @@ abstract class LLM(val modelName: String, val modelVersion: String) {
     protected abstract fun forceTool(vararg tools: ToolFunction<*>)
 
     //// DSL /////
-    inline fun Chat(logHistory: Boolean = true, useMessageHistory: Boolean = true, action: Chat.() -> Unit): Chat =
+    inline fun chat(logHistory: Boolean = true, useMessageHistory: Boolean = true, action: Chat.() -> Unit): Chat =
         Chat().apply {
             this.logHistory = logHistory
             this.useMessageHistory = useMessageHistory
@@ -58,33 +57,33 @@ abstract class LLM(val modelName: String, val modelVersion: String) {
             action(this)
         }
 
-    inline fun Chat.Message(action: Message.() -> Unit): Message = Message().also { message ->
+    inline fun Chat.message(action: Message.() -> Unit): Message = Message().also { message ->
         action(message)
-        message.responsePayload = sendMessage(MessagePayload(chat = this, message = message))
+        message.send(this@LLM, this@message)
         addMessage(message)
     }
 
-    fun Chat.Message(prompt: String): Message = Message { Include(prompt) }
+    fun Chat.message(prompt: String): Message = message { Include(prompt) }
 
     // Tools
     /**
      * Adds the provided Tools(s) to any calls to the LLM. The Tools will automatically be removed after the block
      * is completed.
      */
-    inline fun Tool(vararg tool: Tool, lambda: (LLM.(tool: Tool) -> Unit)) {
-        Tool(tool = tool)
-        this.lambda(tool[0])//.also { flow?.actions?.add(it) }
-        tools -= tool
+    inline fun tool(vararg tools: Tool, lambda: (LLM.(tool: Tool) -> Unit)) {
+        tool(tools = tools)
+        this.lambda(tools[0])//.also { flow?.actions?.add(it) }
+        this.tools -= tools.toSet()
     }
 
     /**
      * Adds the provided Tools(s) to any calls to the LLM.
      */
-    fun Tool(vararg tool: Tool) {
-        tools.forEach {
-            if (!tools.contains(it)) return
+    fun tool(vararg tools: Tool) {
+        this.tools.forEach {
+            if (!this.tools.contains(it)) return
         }
-        tools += tool
+        this.tools += tools
     }
 
     /**

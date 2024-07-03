@@ -23,22 +23,24 @@ import kotlin.properties.Delegates
  *
  * @author Winter
  */
-class OpenAIModel(
+open class OpenAIModel(
     model: String,
     val apiKey: String,
     // TODO: Allow for adjusting on the fly
     readTimeout: Int = 30
 ) : OkHttpLLM(model, model.replace("gpt-", ""), readTimeout) {
+    open var endpoint = "https://api.openai.com/v1"
+
     /**
      * If the package fails to send to OpenAI's servers due to a 429 error (rate limit), it will automatically resend
      * after the delay has passed. Set to -1 to disable resending.
      */
-    var rateLimitDelay: Long = 5000L
+    open var rateLimitDelay: Long = 5000L
 
     /**
      * Maximum attempts to resend the message to the server.
      */
-    var maxResendingAttempts = 3
+    open var maxResendingAttempts = 3
 
     override fun establishConnection() { /* ... */ }
 
@@ -93,14 +95,14 @@ class OpenAIModel(
 
         val messageHistory = JSONArray()
 
-        if (payload.chat.useMessageHistory) {
+        if (payload.chat?.useMessageHistory == true) {
             payload.chat.chatHistory.forEach { message: Message ->
-                messageHistory.put(messageObject("user", message.prompt.rawPrompt.toString()))
+                messageHistory.put(messageObject("user", message.prompt.toString()))
                 messageHistory.put(messageObject("assistant", message.response))
             }
         }
 
-        messageHistory.put(messageObject("user", payload.message.prompt.rawPrompt.toString()))
+        messageHistory.put(messageObject("user", payload.message.prompt.toString()))
 
         return sendMessage(messageHistory, activeTools, toolChoice)
     }
@@ -118,7 +120,7 @@ class OpenAIModel(
         }
 
         val request = Request.Builder()
-            .url("https://api.openai.com/v1/chat/completions")
+            .url("$endpoint/chat/completions")
             .addHeader("Authorization", "Bearer $apiKey")
             .post(json.toString().toRequestBody("application/json; charset=utf-8".toMediaType())).build()
 

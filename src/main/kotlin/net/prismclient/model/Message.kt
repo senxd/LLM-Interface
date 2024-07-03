@@ -1,27 +1,41 @@
 package net.prismclient.model
 
+import net.prismclient.chat.Chat
+import net.prismclient.payload.MessagePayload
 import net.prismclient.payload.ResponsePayload
-import net.prismclient.prompt.Prompt
+import net.prismclient.util.Copyable
 import net.prismclient.util.localResource
 import java.io.File
 import java.time.Instant
 
-class Message {
-    val creationTimeStamp: Instant = Instant.now()
+class Message : Copyable<Message> {
+    val creationTimeStamp = Instant.now()
     var sentTimeStamp: Instant? = null
 
-    val prompt: Prompt = Prompt()
-    var responsePayload: ResponsePayload? = null
+    val prompt = StringBuilder()
+    var messageResponse: ResponsePayload? = null
+
+    /**
+     * If the message has been sent to an LLM model.
+     */
+    val sent: Boolean get() = sentTimeStamp != null
 
     val response: String
-        get() = this.responsePayload?.response ?: throw NullPointerException("Response is Null")
+        get() = this.messageResponse?.response ?: throw NullPointerException("Response is Null")
+
+    fun send(model: LLM, chat: Chat?) {
+        sentTimeStamp = Instant.now()
+        messageResponse = model.sendMessage(MessagePayload(chat = chat, message = this))
+    }
 
     //// DSL /////
     fun Include(text: String) {
-        prompt.rawPrompt.append(text)
+        prompt.append(text)
     }
 
     fun LocalPrompt(name: String) = Include(File(localPromptFolder, "$name.txt").readText())
+
+    override fun copy(): Message = Message().also { it.prompt.append(prompt) }
 
     /**
      * An alternative method to invoke [Include].

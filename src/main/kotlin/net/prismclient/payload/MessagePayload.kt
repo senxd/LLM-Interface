@@ -8,4 +8,4 @@ import net.prismclient.model.Message
  *
  * @author Winter
  */
-data class MessagePayload(val chat: Chat, val message: Message) : Payload()
+data class MessagePayload(val chat: Chat?, val message: Message) : Payload()

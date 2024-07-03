@@ -16,6 +16,12 @@ abstract class OkHttpLLM(modelName: String, modelVersion: String, readTimeout: I
         .readTimeout(readTimeout.toLong(), TimeUnit.SECONDS)
         .build()
 
+    var readTimeout: Int = readTimeout
+        set(value) {
+            field = value
+            client = client.newBuilder().readTimeout(value.toLong(), TimeUnit.SECONDS).build()
+        }
+
     protected inline fun JSONObject.obj(name: String, lambda: JSONObject.() -> Unit) {
         put(name, JSONObject().apply(lambda))
     }
