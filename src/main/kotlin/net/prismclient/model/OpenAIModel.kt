@@ -47,7 +47,7 @@ open class OpenAIModel(
     override fun sendMessage(payload: MessagePayload): ResponsePayload {
         var toolChoice: JSONObject? = null
         // Generate the tool request based on the OpenAPI spec
-        val activeTools: JSONArray? = if (tools.isEmpty()) null else JSONArray().apply {
+        val activeTools: JSONArray? = if (tools.isEmpty() || tools.all { it.functions.isEmpty() }) null else JSONArray().apply {
             tools.forEach { tool ->
                 tool.functions.filter { !it.disabled }.forEach { function ->
                     put(JSONObject().apply {

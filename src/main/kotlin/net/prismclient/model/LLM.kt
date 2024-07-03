@@ -43,6 +43,10 @@ abstract class LLM(val modelName: String, val modelVersion: String) {
         inlineTools?.functions?.find { it == tool }?.let { inlineTools!!.functions.remove(it) }
     }
 
+    open fun clearInlineTools() {
+        inlineTools = null
+    }
+
     /**
      * Forces the tool(s) to be used by the LLM
      */
