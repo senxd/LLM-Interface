@@ -71,9 +71,9 @@ abstract class LLM(val modelName: String, val modelVersion: String) {
      * Adds the provided Tools(s) to any calls to the LLM. The Tools will automatically be removed after the block
      * is completed.
      */
-    inline fun Tool(vararg tool: Tool, action: (LLM.() -> Unit)) {
+    inline fun Tool(vararg tool: Tool, lambda: (LLM.(tool: Tool) -> Unit)) {
         Tool(tool = tool)
-        action(this)
+        this.lambda(tool[0])//.also { flow?.actions?.add(it) }
         tools -= tool
     }
 

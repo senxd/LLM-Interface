@@ -12,7 +12,5 @@ class Excel(file: File) : Document(file) {
             field = value
         }
 
-    inline fun retrieveSheet(page: Int = 0, lambda: (sheet: ExcelSheet) -> Unit) {
-        lambda(excelFile.getSheetAt(page))
-    }
+    fun retrieveSheet(page: Int = 0, lambda: (sheet: ExcelSheet) -> Unit) = excelFile.getSheetAt(page)
 }
