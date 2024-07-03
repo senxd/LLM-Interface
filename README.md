@@ -24,15 +24,15 @@ _This list is non-exhaustive and subject to change._
 - [ ] Observer (Tools to monitor LLM performance in automated sequence tasks)
   - [ ] Metric Based Observation
   - [ ] LLM Based Observation
-- [ ] Document
-  - [ ] Parsing
+- [x] Document
+  - [x] Parsing
     - [x] PDFs
       - [x] OCR
       - [x] Text Metadata Extraction
-    - [ ] Generic Text
-      - [ ] Plain Text _.txt_
+    - [x] Generic Text
+      - [x] Plain Text _.txt_
       - [x] Microsoft Word _.docx_ or _.doc_
-      - [ ] Rich Text Format _.rtf_
+      - [x] Rich Text Format _.rtf_
 - [ ] Batch Processing
   - [x] PDFs
   - [ ] LLM Requests
