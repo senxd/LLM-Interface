@@ -11,6 +11,8 @@ import okhttp3.*
  * @author Winter
  */
 class LMStudioModel(apiEndpoint: String, model: String, apiKey: String): OpenAIModel(model, apiKey) {
+    var toolCalling: (tools: List<ToolFunction<*>>) -> Unit = { throw RuntimeException("Tool calling is not supported for LM Studio") }
+
     override var endpoint: String = apiEndpoint
 
     override fun establishConnection() {
@@ -25,6 +27,6 @@ class LMStudioModel(apiEndpoint: String, model: String, apiKey: String): OpenAIM
     }
 
     override fun forceTool(vararg tools: ToolFunction<*>) {
-        throw RuntimeException("Tool calling is not supported for LM Studio")
+        toolCalling(tools.toList())
     }
 }

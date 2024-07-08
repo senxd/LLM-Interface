@@ -11,7 +11,15 @@ import net.prismclient.util.Copyable
  *  @author Winter
  *  @see ToolFunction
  */
-abstract class Tool {
+abstract class Tool(var name: String) {
+    constructor() : this("") { name = this::class.java.simpleName }
+
+    /**
+     * A message which is injected into all Messages with this [Tool] active. Useful for providing an overall
+     * description of the Tools.
+     */
+    open val injectionPrompt: String get() = ""
+
     var functions: MutableList<ToolFunction<*>> = mutableListOf()
 }
 

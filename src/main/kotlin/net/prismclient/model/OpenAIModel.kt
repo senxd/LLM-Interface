@@ -42,13 +42,28 @@ open class OpenAIModel(
      */
     open var maxResendingAttempts = 3
 
+    /**
+     * Adds a prompt to the message before sending it to the model. Not required for Open AI models,
+     * however it can be useful for providing additional context.
+     */
+    open var useToolInjectionPrompt = true
+
+    /**
+     * Specifies the location where the tool injection prompt should be placed.
+     */
+    open var toolInjectionPromptLocation = InjectionPromptLocation.BEFORE
+
     override fun establishConnection() { /* ... */ }
 
     override fun sendMessage(payload: MessagePayload): ResponsePayload {
+        val messageHistory = JSONArray()
+        val toolDescription = StringBuilder()
         var toolChoice: JSONObject? = null
+
         // Generate the tool request based on the OpenAPI spec
         val activeTools: JSONArray? = if (tools.isEmpty() || tools.all { it.functions.isEmpty() }) null else JSONArray().apply {
             tools.forEach { tool ->
+                if (tool.injectionPrompt.isNotBlank() && useToolInjectionPrompt) toolDescription.append(tool.injectionPrompt)
                 tool.functions.filter { !it.disabled }.forEach { function ->
                     put(JSONObject().apply {
                         put("type", "function")
@@ -93,8 +108,6 @@ open class OpenAIModel(
             }
         }
 
-        val messageHistory = JSONArray()
-
         if (payload.chat?.useMessageHistory == true) {
             payload.chat.chatHistory.forEach { message: Message ->
                 messageHistory.put(messageObject("user", message.prompt.toString()))
@@ -102,7 +115,16 @@ open class OpenAIModel(
             }
         }
 
-        messageHistory.put(messageObject("user", payload.message.prompt.toString()))
+        val prompt: StringBuilder = if (toolDescription.isNotBlank() && useToolInjectionPrompt) {
+            toolDescription.insert(0, "The following Tools are available for use:\n")
+            if (toolInjectionPromptLocation == InjectionPromptLocation.BEFORE) {
+                toolDescription.append(payload.message.prompt)
+            } else {
+                payload.message.prompt.append(toolDescription)
+            }
+        } else payload.message.prompt
+
+        messageHistory.put(messageObject("user", prompt.toString()))
 
         return sendMessage(messageHistory, activeTools, toolChoice)
     }
@@ -233,5 +255,17 @@ open class OpenAIModel(
         super.handleCallException(exception, request, callback)
         // Obviously if it doesn't work once, try again!
         call(request, callback)
+    }
+
+    enum class InjectionPromptLocation {
+       /**
+        * Before the message prompt.
+        */
+        BEFORE,
+
+        /**
+         * After the message prompt.
+         */
+        AFTER
     }
 }
