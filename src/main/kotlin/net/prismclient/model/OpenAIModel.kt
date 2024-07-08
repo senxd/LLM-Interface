@@ -63,7 +63,7 @@ open class OpenAIModel(
         // Generate the tool request based on the OpenAPI spec
         val activeTools: JSONArray? = if (tools.isEmpty() || tools.all { it.functions.isEmpty() }) null else JSONArray().apply {
             tools.forEach { tool ->
-                if (tool.injectionPrompt.isNotBlank() && useToolInjectionPrompt) toolDescription.append(tool.injectionPrompt)
+                if (tool.injectionPrompt.isNotBlank() && useToolInjectionPrompt) toolDescription.append("${tool.name}: ${tool.injectionPrompt}")
                 tool.functions.filter { !it.disabled }.forEach { function ->
                     put(JSONObject().apply {
                         put("type", "function")
