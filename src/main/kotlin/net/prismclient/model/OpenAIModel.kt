@@ -187,7 +187,7 @@ open class OpenAIModel(
                 // append the result of the resulting call from ChatGPT after
                 // return the value of the function it wants.
                 result.append(responseMessage.optJSONArray("tool_calls")?.let {
-                    handleToolCalls(responseMessage, messageHistory)
+                    handleToolCalls(responseMessage, messageHistory, tools, toolChoice)
                 } ?: messageContent)
                 latch.countDown()
             }
@@ -203,7 +203,7 @@ open class OpenAIModel(
      *
      * @see [Tool]
      */
-    private fun handleToolCalls(response: JSONObject, messageHistory: JSONArray): String {
+    private fun handleToolCalls(response: JSONObject, messageHistory: JSONArray, tools: JSONArray?, toolChoice: JSONObject? = null): String {
         val toolCalls = response.getJSONArray("tool_calls")
 
         // Add the tool call to the message history
@@ -220,11 +220,12 @@ open class OpenAIModel(
 
             var tool: Tool by Delegates.notNull()
             val mappedFunction =
-                tools.firstNotNullOfOrNull { it.functions.find { f -> tool = it; f.name == functionName } }
+                this.tools.firstNotNullOfOrNull { it.functions.find { f -> tool = it; f.name == functionName } }
                     ?: throw NullPointerException("Function $functionName not found within Tools")
 
             val mappedParameters = mappedFunction.parameters.map {
                 it.copy().apply {
+                    // IMPROVE: Better Casting method instead of only allowing Strings
                     castTo(arguments.getString(name))
                 }
             }.toTypedArray().toMutableList()
@@ -236,7 +237,7 @@ open class OpenAIModel(
                 put("tool_call_id", toolCalls.getJSONObject(i).getString("id"))
             })
         }
-        return sendMessage(messageHistory).response
+        return sendMessage(messageHistory, tools, toolChoice).response
     }
 
     override fun forceTool(vararg tools: ToolFunction<*>) {

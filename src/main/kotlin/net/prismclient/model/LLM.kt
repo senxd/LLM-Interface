@@ -80,6 +80,8 @@ abstract class LLM(val modelName: String, val modelVersion: String) {
         this.tools -= tools.toSet()
     }
 
+    inline fun Tool.tool(lambda: Tool.() -> Unit) = this.also { tools.add(this) }.also(lambda)
+
     /**
      * Adds the provided Tools(s) to any calls to the LLM.
      */

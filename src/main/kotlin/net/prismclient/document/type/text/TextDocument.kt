@@ -24,10 +24,8 @@ abstract class TextDocument(file: File, vararg val fileExtensions: String) : Doc
     /**
      * Return a String given the lambda with a [StringBuilder] as a receiver. Automatically updates [extractionCache].
      */
-    protected inline fun Builder(lambda: StringBuilder.() -> Unit): String =
-        StringBuilder()
-            .apply {
-                if (cache) extractionCache = this
-                lambda(this)
-            }.toString()
+    protected inline fun Builder(lambda: StringBuilder.() -> Unit): String = buildString {
+        if (cache) extractionCache = this
+        lambda(this)
+    }
 }
