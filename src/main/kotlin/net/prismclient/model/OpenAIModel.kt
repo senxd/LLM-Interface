@@ -26,7 +26,6 @@ import kotlin.properties.Delegates
 open class OpenAIModel(
     model: String,
     val apiKey: String,
-    // TODO: Allow for adjusting on the fly
     readTimeout: Int = 30
 ) : OkHttpLLM(model, model.replace("gpt-", ""), readTimeout) {
     open var endpoint = "https://api.openai.com/v1"

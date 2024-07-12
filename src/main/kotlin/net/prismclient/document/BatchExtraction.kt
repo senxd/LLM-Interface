@@ -1,5 +1,3 @@
-// IMPROVE: Debug statements when parsing
-// IMPROVE: Fallback / checking
 package net.prismclient.document
 
 import kotlinx.coroutines.*
@@ -13,6 +11,7 @@ import java.io.File
  *
  * @author Winter
  */
+@Deprecated("dont use")
 class BatchExtraction(private val documents: ArrayList<TextDocument>) {
     /**
      * Given a [folder], add all documents with the provided [extension](s) based the specified [TextDocument] type defined
