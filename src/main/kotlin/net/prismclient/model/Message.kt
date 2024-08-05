@@ -33,7 +33,7 @@ class Message : Copyable<Message> {
         prompt.append(text)
     }
 
-    fun LocalPrompt(name: String) = Include(File(localPromptFolder, "$name.txt").readText())
+    fun LocalPrompt(localPromptFolder: File = "prompts".localResource, name: String) = Include(File(localPromptFolder, "$name.txt").readText())
 
     override fun copy(): Message = Message().also { it.prompt.append(prompt) }
 
@@ -41,8 +41,4 @@ class Message : Copyable<Message> {
      * An alternative method to invoke [Include].
      */
     operator fun String.unaryPlus() = Include(this)
-
-    companion object {
-        var localPromptFolder = "prompts".localResource
-    }
 }
