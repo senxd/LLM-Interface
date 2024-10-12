@@ -52,6 +52,8 @@ open class OpenAIModel(
      */
     open var toolInjectionPromptLocation = InjectionPromptLocation.BEFORE
 
+    open var additionalParameters: JSONObject? = null
+
     override fun establishConnection() { /* ... */ }
 
     override fun sendMessage(payload: MessagePayload): ResponsePayload {
@@ -134,9 +136,16 @@ open class OpenAIModel(
         val json = JSONObject().apply {
             put("model", modelName)
             put("messages", messageHistory)
-            if (tools != null) {
+
+            tools?.let {
                 put("tool_choice", toolChoice)
                 put("tools", tools)
+            }
+
+            additionalParameters?.let {
+                for (key in it.keys()) {
+                    put(key, it[key])
+                }
             }
         }
 
@@ -241,7 +250,7 @@ open class OpenAIModel(
 
     override fun forceTool(vararg tools: ToolFunction<*>) {
         // Open AI limits forced tool calling to a single
-        // tool with a singed request. Therefore, we need
+        // tool with a single request. Therefore, we need
         // to ensure all the other functions are not currently
         // forced. It is still possible to have multiple tools
         // being forced and in this case, the last ToolFunction
@@ -255,6 +264,12 @@ open class OpenAIModel(
         super.handleCallException(exception, request, callback)
         // Obviously if it doesn't work once, try again!
         call(request, callback)
+    }
+
+    fun <T> parameter(name: String, value: T) {
+        additionalParameters = (additionalParameters ?: JSONObject()).apply {
+            put(name, value)
+        }
     }
 
     enum class InjectionPromptLocation {
