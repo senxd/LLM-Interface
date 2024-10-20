@@ -55,6 +55,7 @@ open class OpenAIModel(
     val Message.promptTokens: Int
         get() = messageResponse
             ?.payload
+            ?.getJSONObject("usage")
             ?.getInt("prompt_tokens")
             ?: -1
 
