@@ -1,4 +1,4 @@
-//import net.prismclient.model.OpenAIModel
+//import net.prismclient.model.openai.OpenAIModel
 //import net.prismclient.tools.Function
 //import net.prismclient.tools.Parameter
 //import net.prismclient.util.Model

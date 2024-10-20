@@ -1,6 +1,6 @@
 //
 //import net.prismclient.flow.FlowTool
-//import net.prismclient.model.OpenAIModel
+//import net.prismclient.model.openai.OpenAIModel
 //import net.prismclient.util.Model
 //
 //fun main() {

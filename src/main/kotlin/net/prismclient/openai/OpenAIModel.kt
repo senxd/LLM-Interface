@@ -1,7 +1,9 @@
-package net.prismclient.model
+package net.prismclient.openai
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import net.prismclient.model.Message
+import net.prismclient.model.OkHttpLLM
 import net.prismclient.payload.MessagePayload
 import net.prismclient.payload.ResponsePayload
 import net.prismclient.tools.Tool
@@ -46,6 +48,46 @@ open class OpenAIModel(
      * however it can be useful for providing additional context.
      */
     open var useToolInjectionPrompt = true
+
+    /**
+     * Amount of tokens the prompt took.
+     */
+    val Message.promptTokens: Int
+        get() = messageResponse
+            ?.payload
+            ?.getInt("prompt_tokens")
+            ?: -1
+
+    /**
+     * Amount of tokens taken excluding the prompt.
+     */
+    val Message.completionTokens: Int
+        get() = messageResponse
+            ?.payload
+            ?.getJSONObject("usage")
+            ?.getInt("completion_tokens")
+            ?: -1
+
+    /**
+     * The total tokens used including, [promptTokens], [reasoningTokens] and the response tokens.
+     */
+    val Message.totalTokens: Int
+        get() = messageResponse
+            ?.payload
+            ?.getJSONObject("usage")
+            ?.getInt("total_tokens")
+            ?: -1
+
+    /**
+     * Returns the amount of tokens used for reasoning if applicable.
+     */
+    val Message.reasoningTokens: Int
+        get() = messageResponse
+            ?.payload
+            ?.getJSONObject("usage")
+            ?.getJSONObject("completion_tokens_details")
+            ?.getInt("reasoning_tokens")
+            ?: -1
 
     /**
      * Specifies the location where the tool injection prompt should be placed.
@@ -155,6 +197,7 @@ open class OpenAIModel(
             .post(json.toString().toRequestBody("application/json; charset=utf-8".toMediaType())).build()
 
         val result = StringBuilder()
+        var jsonResponse: JSONObject? = null
         val latch = CountDownLatch(1)
 
         call(request) { response ->
@@ -186,8 +229,8 @@ open class OpenAIModel(
                 }
 
                 val responseBody = it.body?.string()
-                val jsonResponse = JSONObject(responseBody ?: "")
-                val choices = jsonResponse.getJSONArray("choices")
+                jsonResponse = JSONObject(responseBody ?: "")
+                val choices = jsonResponse!!.getJSONArray("choices")
                 val responseMessage = choices.getJSONObject(0).getJSONObject("message")
                 val messageContent = responseMessage.optString("content")
 
@@ -203,7 +246,7 @@ open class OpenAIModel(
 
         latch.await()
 
-        return ResponsePayload(result.toString())
+        return ResponsePayload(result.toString(), jsonResponse)
     }
 
     /**

@@ -1,3 +1,5 @@
 package net.prismclient.payload
 
-class ResponsePayload(val response: String, /* val latent: Boolean,  val callback: (String) -> Unit */) : Payload()
+import org.json.JSONObject
+
+open class ResponsePayload(val response: String, val payload: JSONObject? = null/* val latent: Boolean,  val callback: (String) -> Unit */) : Payload()

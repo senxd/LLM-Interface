@@ -1,4 +1,4 @@
-import net.prismclient.model.OpenAIModel
+import net.prismclient.openai.OpenAIModel
 import net.prismclient.util.Model
 
 fun main() {
@@ -6,9 +6,12 @@ fun main() {
 
     Model(OpenAIModel("o1-preview", apiKey, readTimeout = 300)) {
         chat {
-            parameter("max_completion_tokens", 1024)
+            parameter("max_completion_tokens", 512)
 
-            println(message(true,"What is the meaning of life?").response)
+            message(true,"What is the meaning of life?").apply {
+                println("Response: $response")
+                println("Reasoning Tokens: $reasoningTokens")
+            }
         }
     }
 }

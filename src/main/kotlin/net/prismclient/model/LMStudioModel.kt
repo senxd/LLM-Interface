@@ -1,5 +1,6 @@
 package net.prismclient.model
 
+import net.prismclient.openai.OpenAIModel
 import net.prismclient.tools.ToolFunction
 import okhttp3.*
 
