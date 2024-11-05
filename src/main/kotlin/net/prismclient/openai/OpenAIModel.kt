@@ -32,22 +32,8 @@ open class OpenAIModel(
 ) : OkHttpLLM(model, model.replace("gpt-", ""), readTimeout) {
     open var endpoint = "https://api.openai.com/v1"
 
-    /**
-     * If the package fails to send to OpenAI's servers due to a 429 error (rate limit), it will automatically resend
-     * after the delay has passed. Set to -1 to disable resending.
-     */
-    open var rateLimitDelay: Long = 5000L
-
-    /**
-     * Maximum attempts to resend the message to the server.
-     */
-    open var maxResendingAttempts = 3
-
-    /**
-     * Adds a prompt to the message before sending it to the model. Not required for Open AI models,
-     * however it can be useful for providing additional context.
-     */
-    open var useToolInjectionPrompt = true
+    override val supportsToolCalls: Boolean
+        get() = if (!modelName.startsWith("gpt-")) super.supportsToolCalls else false
 
     /**
      * Amount of tokens the prompt took.

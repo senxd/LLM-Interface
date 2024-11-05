@@ -17,6 +17,8 @@ import net.prismclient.tools.ToolFunction
 abstract class LLM(val modelName: String, val modelVersion: String) {
     val tools: MutableList<Tool> = mutableListOf()
 
+    open val supportsToolCalls = true
+
     protected var inlineTools: InlineTool? = null
 
     abstract fun establishConnection()
