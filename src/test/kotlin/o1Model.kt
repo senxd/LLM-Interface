@@ -8,7 +8,7 @@ fun main() {
         chat {
             parameter("max_completion_tokens", 512)
 
-            message(true,"What is the meaning of life?").apply {
+            message(true,"1+1=").apply {
                 println("Response: $response")
                 println("Reasoning Tokens: $reasoningTokens")
             }

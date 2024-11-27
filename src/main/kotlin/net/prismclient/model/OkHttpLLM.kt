@@ -10,7 +10,12 @@ import java.util.concurrent.TimeUnit
  *
  * @author Winter
  */
-abstract class OkHttpLLM(modelName: String, modelVersion: String, readTimeout: Int = 30) : LLM(modelName, modelVersion) {
+abstract class OkHttpLLM(
+    modelName: String,
+    modelVersion: String,
+    readTimeout: Int = 30,
+    modelVendor: ModelVendor = ModelVendor.Custom_OpenAI
+) : LLM(modelName, modelVersion, modelVendor) {
     protected open var client = OkHttpClient()
         .newBuilder()
         .readTimeout(readTimeout.toLong(), TimeUnit.SECONDS)
@@ -21,7 +26,6 @@ abstract class OkHttpLLM(modelName: String, modelVersion: String, readTimeout: I
             field = value
             client = client.newBuilder().readTimeout(value.toLong(), TimeUnit.SECONDS).build()
         }
-
 
     /**
      * If the package fails to send due to a 429 (rate limit) error, it will automatically resend

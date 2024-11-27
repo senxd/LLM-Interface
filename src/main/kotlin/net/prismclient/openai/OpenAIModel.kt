@@ -3,6 +3,7 @@ package net.prismclient.openai
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import net.prismclient.model.Message
+import net.prismclient.model.ModelVendor
 import net.prismclient.model.OkHttpLLM
 import net.prismclient.payload.MessagePayload
 import net.prismclient.payload.ResponsePayload
@@ -29,7 +30,7 @@ open class OpenAIModel(
     model: String,
     val apiKey: String,
     readTimeout: Int = 30
-) : OkHttpLLM(model, model.replace("gpt-", ""), readTimeout) {
+) : OkHttpLLM(model, model, readTimeout, ModelVendor.OpenAI) {
     open var endpoint = "https://api.openai.com/v1"
 
     override val supportsToolCalls: Boolean
