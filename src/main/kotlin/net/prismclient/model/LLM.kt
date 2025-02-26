@@ -14,7 +14,7 @@ import net.prismclient.tools.ToolFunction
  *
  * @author Winter
  */
-abstract class LLM(val modelName: String, val modelVersion: String, val modelVendor: ModelVendor) {
+abstract class LLM(val modelName: String, val modelVersion: String?, val modelVendor: ModelVendor) {
     val tools: MutableList<Tool> = mutableListOf()
 
     open val supportsToolCalls = true

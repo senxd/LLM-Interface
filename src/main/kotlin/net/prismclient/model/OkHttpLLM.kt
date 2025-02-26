@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
  */
 abstract class OkHttpLLM(
     modelName: String,
-    modelVersion: String,
+    modelVersion: String?,
     readTimeout: Int = 30,
     modelVendor: ModelVendor = ModelVendor.Custom_OpenAI
 ) : LLM(modelName, modelVersion, modelVendor) {
