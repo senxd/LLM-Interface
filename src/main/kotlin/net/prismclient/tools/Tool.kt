@@ -8,6 +8,10 @@ import net.prismclient.util.Copyable
 /**
  *  The base class for defining APIs that can be interfaced by an AI model, such as web searching.
  *
+ *  Different providers use vary in their naming of this feature. In the project, "Functions" are individual actions
+ *  that an LLM can do, while "Tools" are the group of functions to complete some task, e.g., a calculator **tool**
+ *  might have an add **function** and a subtract **function**.
+ *
  *  @author Winter
  *  @see ToolFunction
  */

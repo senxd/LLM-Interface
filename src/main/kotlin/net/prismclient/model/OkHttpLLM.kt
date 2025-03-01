@@ -53,6 +53,11 @@ abstract class OkHttpLLM(
         put("content", content)
     }
 
+    protected fun messageObject(role: String, content: JSONObject) = JSONObject().apply {
+        put("role", role)
+        put("content", content)
+    }
+
     protected fun call(request: Request, callback: (response: Response) -> Unit) {
         try {
             client.newCall(request).enqueue(object : Callback {

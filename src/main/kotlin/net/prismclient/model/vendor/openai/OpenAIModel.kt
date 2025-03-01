@@ -157,6 +157,8 @@ open class OpenAIModel(
 
         messageHistory.put(messageObject("user", prompt.toString()))
 
+        // TODO: Add chat messages to the Chat class messageHistory
+
         return sendMessage(messageHistory, activeTools, toolChoice)
     }
 
@@ -266,7 +268,7 @@ open class OpenAIModel(
                 it.copy().apply {
                     // IMPROVE: Better Casting method instead of only allowing Strings
                     castTo(arguments.getString(name))
-                }
+                } 
             }.toTypedArray().toMutableList()
             val functionResponse = mappedFunction.response(mappedParameters)
             messageHistory.put(JSONObject().apply {

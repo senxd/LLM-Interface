@@ -15,11 +15,21 @@ import net.prismclient.tools.ToolFunction
  * @author Winter
  */
 abstract class LLM(val modelName: String, val modelVersion: String?, val modelVendor: ModelVendor) {
+    /**
+     * Representation of LLM "tools" or "function" calls available for use by the [LLM].
+     *
+     * @see Tool For more information & differentiation of a tool and function.
+     */
     val tools: MutableList<Tool> = mutableListOf()
 
-    open val supportsToolCalls = true
-
+    /**
+     * Inline tools are subtype of [Tool] in which a Function (a singular "tool" or "function") is defined inline, in
+     * the chat. From the backend, the [InlineTool] class is added to the [tools] list and the function is appended
+     * as a function to the [InlineTool].
+     */
     protected var inlineTools: InlineTool? = null
+
+    open val supportsToolCalls = true
 
     abstract fun establishConnection()
 
