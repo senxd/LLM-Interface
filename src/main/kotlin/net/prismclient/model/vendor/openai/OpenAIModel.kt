@@ -278,6 +278,7 @@ open class OpenAIModel(
                 put("tool_call_id", toolCalls.getJSONObject(i).getString("id"))
             })
         }
+
         return sendMessage(messageHistory, tools, toolChoice).response
     }
 

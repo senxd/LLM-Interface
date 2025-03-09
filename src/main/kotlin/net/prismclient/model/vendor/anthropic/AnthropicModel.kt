@@ -12,30 +12,30 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import java.awt.SystemColor.text
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.properties.Delegates
 
-class AnthropicModel(val model: Models, val apiKey: String) : OkHttpLLM(model.id, null, 1000, ModelVendor.Anthropic) {
-    var maxTokens: Int = 1024
+class AnthropicModel(val model: Models, val apiKey: String, think: Boolean = false, readTimeout: Int = 600) : OkHttpLLM(model.id, null, readTimeout, ModelVendor.Anthropic) {
     var endpoint = "https://api.anthropic.com/v1"
     var anthropicVersion = "2023-06-01"
+
     var additionalParameters: JSONObject? = null
-    var enableExtendedThinking: Boolean = false
-    var extendedThinkingBudget: Int = 1024  // Default budget tokens for extended thinking
+
+    var maxGenerationTokens: Int = 1024
+    var useExtendedThinking: Boolean = think
+    var extendedThinkingBudget: Int = 4096  // Default budget tokens for extended thinking
     var streamingCallback: ((String) -> Unit)? = null
-    var useExtendedThinking: Boolean = false
 
-    val effectiveMaxTokens: Int get() = maxTokens + (if (enableExtendedThinking) extendedThinkingBudget else 0)
+    val effectiveMaxTokens: Int get() = maxGenerationTokens + (if (useExtendedThinking) extendedThinkingBudget else 0)
 
-    override fun establishConnection() { /* ... */
-    }
+    override fun establishConnection() { /* ... */ }
 
     override fun sendMessage(payload: MessagePayload): ResponsePayload {
         val messageHistory = JSONArray()
-
-        // TODO: Prompt Injection
 
         if (payload.chat?.useMessageHistory == true) {
             payload.chat.chatHistory.forEach { message: Message ->
@@ -54,10 +54,9 @@ class AnthropicModel(val model: Models, val apiKey: String) : OkHttpLLM(model.id
         val messageContent = StringBuilder()
         val thinkingContent = StringBuilder()
         var responsePayload: ResponsePayload? = null
-
         val requestBody = buildRequestBody(messageHistory)
-
-        println("Request: ${requestBody.toString(4)}")
+        var signature: String? = null
+        var toolResponseInProgress = false
 
         val request = Request.Builder()
             .url("$endpoint/messages")
@@ -73,10 +72,9 @@ class AnthropicModel(val model: Models, val apiKey: String) : OkHttpLLM(model.id
                     val errorCode = resp.code
                     val errorBody = resp.body?.string() ?: "Unknown error"
 
-                    println("Error: $errorCode, $errorBody")
                     responsePayload = ResponsePayload("Error: $errorCode, $errorBody")
                     latch.countDown()
-                    throw RuntimeException("Failed to send message. Error Code: $errorCode, Error: $errorBody")
+                    throw RuntimeException("Failed to send message. Error Code: $errorCode, Error: $errorBody, Request: ${requestBody.toString(4)}")
                 }
 
                 val reader = resp.body?.byteStream()?.let {
@@ -109,8 +107,6 @@ class AnthropicModel(val model: Models, val apiKey: String) : OkHttpLLM(model.id
                             val eventJson = JSONObject(jsonData)
                             val type = eventJson.getString("type")
 
-//                            println(eventJson)
-
                             when (type) {
                                 "message_start" -> {}
                                 "content_block_start" -> {
@@ -118,10 +114,6 @@ class AnthropicModel(val model: Models, val apiKey: String) : OkHttpLLM(model.id
                                     val contentType = contentBlock.getString("type")
 
                                     when (contentType) {
-                                        "thinking" -> {
-                                            thinkingContent.append("<think>")
-                                        }
-
                                         "tool_use" -> {
                                             toolUse = true
                                             toolName = contentBlock.getString("name")
@@ -129,9 +121,9 @@ class AnthropicModel(val model: Models, val apiKey: String) : OkHttpLLM(model.id
                                         }
                                     }
                                 }
-
                                 "content_block_delta" -> {
                                     val delta = eventJson.optJSONObject("delta")
+                                    val type = delta?.optString("type")
 
                                     // Standard text response
                                     delta.optString("text")?.let { text ->
@@ -139,62 +131,88 @@ class AnthropicModel(val model: Models, val apiKey: String) : OkHttpLLM(model.id
                                         streamingCallback?.invoke(text)
                                     }
 
+                                    // Thinking Response
+                                    if (type == "thinking_delta") {
+                                        thinkingContent.append(delta.optString("thinking"))
+                                    } else if (type == "signature_delta") {
+                                        signature = delta.optString("signature")
+                                    }
+
                                     // Tool Response
                                     if (toolUse && delta.optString("partial_json") != null) {
                                         rawToolJson.append(delta.optString("partial_json"))
                                     }
                                 }
-
                                 "content_block_stop" -> {
                                     val contentType = eventJson.optJSONObject("content_block")?.optString("type", "")
 
                                     if (toolUse) {
-                                        toolUse = false
-
                                         val toolArguments = JSONObject(rawToolJson.toString())
 
                                         messageHistory.put(JSONObject().apply {
                                             put("role", "assistant")
-                                            put("content", JSONArray().put(JSONObject().apply {
-                                                put("type", "tool_use")
-                                                put("id", toolId)
-                                                put("name", toolName)
-                                                put("input", toolArguments)
-                                            }))
+                                            put("content", JSONArray().apply {
+                                                if (useExtendedThinking && thinkingContent.isNotEmpty()) {
+                                                    put(JSONObject().apply {
+                                                        put("type", "thinking")
+                                                        put("thinking", thinkingContent.toString())
+                                                        put("signature", signature)
+                                                    })
+                                                }
+
+                                                put(JSONObject().apply {
+                                                    put("type", "tool_use")
+                                                    put("id", toolId)
+                                                    put("name", toolName)
+                                                    put("input", toolArguments)
+                                                })
+                                            })
                                         })
 
-                                        // Anthropic names Functions as Tools.
-                                        responsePayload = handleToolResponse(toolName!!, toolId!!, toolArguments, messageHistory)
+                                        toolResponseInProgress = true
+                                        val toolResult = handleToolResponse(toolName!!, toolId!!, toolArguments, messageHistory)
+                                        responsePayload = toolResult
+                                        latch.countDown()
                                         return@call
-                                    }
-
-                                    if (contentType == "thinking") {
-                                        thinkingContent.append("</think>")
                                     }
                                 }
 
                                 "message_delta" -> {}
                                 "message_stop" -> {
-                                    println("Content: $messageContent")
+                                    // Only create a response payload if we haven't received one from a tool call
+                                    if (!toolResponseInProgress && messageContent.isNotEmpty()) {
+                                        responsePayload = ResponsePayload(messageContent.toString())
+                                    }
                                     latch.countDown()
                                 }
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
+                            if (latch.count > 0) {
+                                latch.countDown()
+                            }
                         }
                     }
                 }
 
-                // Create response payload with final message content
-                responsePayload = responsePayload ?: ResponsePayload(messageContent.toString())
-                if (!latch.count.equals(0)) {
+                // If we don't have a response yet, create one from the message content
+                if (responsePayload == null && messageContent.isNotEmpty()) {
+                    responsePayload = ResponsePayload(messageContent.toString())
+                }
+
+                if (latch.count > 0) {
                     latch.countDown()
                 }
             }
         }
+        
+        val didComplete = latch.await(readTimeout.toLong(), TimeUnit.SECONDS)
+        
+        if (!didComplete) {
+            println("Warning: Timed out waiting for response after $readTimeout seconds")
+        }
 
-        // Wait for completion
-        latch.await()
+        // Make sure we always return a response, even if one was not set
         return responsePayload ?: ResponsePayload("Error: Failed to get response")
     }
 
@@ -211,7 +229,7 @@ class AnthropicModel(val model: Models, val apiKey: String) : OkHttpLLM(model.id
 
         val mappedParameters = mappedFunction.parameters.map {
             it.copy().apply {
-                // IMPROVE: Better Casting method instead of only allowing Strings
+                // TODO: IMPROVE: Better Casting method instead of only allowing Strings
                 castTo(arguments.getString(name))
             }
         }.toTypedArray().toMutableList()
@@ -233,20 +251,22 @@ class AnthropicModel(val model: Models, val apiKey: String) : OkHttpLLM(model.id
     private fun buildRequestBody(messageHistory: JSONArray?): JSONObject = JSONObject().apply {
         put("model", model.id)
         put("messages", messageHistory)
-        put("max_tokens", maxTokens)
+        put("max_tokens", effectiveMaxTokens)
         put("stream", true)
-        val toolsList = buildToolsList()
-        if (toolsList.length() > 0) {
-            put("tools", toolsList)
-        }
-        if (useExtendedThinking) {
-            obj("system") {
-                put("extended_thinking", JSONObject().apply {
-                    put("enabled", true)
-                    put("max_tokens", effectiveMaxTokens)
-                })
+
+        buildToolsList().let { toolsList ->
+            if (toolsList.length() > 0) {
+                put("tools", toolsList)
             }
         }
+
+        if (useExtendedThinking) {
+            put("thinking", JSONObject().apply {
+                put("type", "enabled")
+                put("budget_tokens", extendedThinkingBudget)
+            })
+        }
+        
         additionalParameters?.let {
             for (key in it.keys()) {
                 put(key, it[key])
@@ -254,12 +274,10 @@ class AnthropicModel(val model: Models, val apiKey: String) : OkHttpLLM(model.id
         }
     }
 
-    fun buildToolsList(): JSONArray {
-        val toolsList = JSONArray()
-
+    private fun buildToolsList(): JSONArray = JSONArray().apply {
         tools.forEach { tool ->
             tool.functions.filter { !it.disabled }.forEach { function ->
-                toolsList.put(JSONObject().apply {
+                put(JSONObject().apply {
                     put("name", function.name)
                     put("description", function.description)
                     put("input_schema", JSONObject().apply {
@@ -277,12 +295,9 @@ class AnthropicModel(val model: Models, val apiKey: String) : OkHttpLLM(model.id
                 })
             }
         }
-
-        return toolsList
     }
 
     override fun forceTool(vararg tools: ToolFunction<*>) {
-        // Set force call flag on specified tools
         tools.forEach { tool ->
             tool.forceCall = true
         }
