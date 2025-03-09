@@ -31,7 +31,8 @@ class Chat {
     val chatHistory: MutableList<Message> = mutableListOf()
 
     fun addMessage(message: Message) {
-        if (logHistory)
+        if (logHistory) {
             chatHistory.add(message)
+        }
     }
 }

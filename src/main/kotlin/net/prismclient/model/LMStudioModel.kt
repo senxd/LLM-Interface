@@ -1,5 +1,6 @@
 package net.prismclient.model
 
+import net.prismclient.openai.OpenAIModel
 import net.prismclient.tools.ToolFunction
 import okhttp3.*
 
@@ -14,6 +15,7 @@ class LMStudioModel(apiEndpoint: String, model: String, apiKey: String): OpenAIM
     var toolCalling: (tools: List<ToolFunction<*>>) -> Unit = { throw RuntimeException("Tool calling is not supported for LM Studio") }
 
     override var endpoint: String = apiEndpoint
+    override val supportsToolCalls: Boolean = false
 
     override fun establishConnection() {
         val request = Request.Builder()

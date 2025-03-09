@@ -1,7 +1,10 @@
-package net.prismclient.model
+package net.prismclient.openai
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import net.prismclient.model.Message
+import net.prismclient.model.ModelVendor
+import net.prismclient.model.OkHttpLLM
 import net.prismclient.payload.MessagePayload
 import net.prismclient.payload.ResponsePayload
 import net.prismclient.tools.Tool
@@ -27,30 +30,59 @@ open class OpenAIModel(
     model: String,
     val apiKey: String,
     readTimeout: Int = 30
-) : OkHttpLLM(model, model.replace("gpt-", ""), readTimeout) {
+) : OkHttpLLM(model, model, readTimeout, ModelVendor.OpenAI) {
     open var endpoint = "https://api.openai.com/v1"
 
-    /**
-     * If the package fails to send to OpenAI's servers due to a 429 error (rate limit), it will automatically resend
-     * after the delay has passed. Set to -1 to disable resending.
-     */
-    open var rateLimitDelay: Long = 5000L
+    override val supportsToolCalls: Boolean
+        get() = if (!modelName.startsWith("gpt-")) super.supportsToolCalls else false
 
     /**
-     * Maximum attempts to resend the message to the server.
+     * Amount of tokens the prompt took.
      */
-    open var maxResendingAttempts = 3
+    val Message.promptTokens: Int
+        get() = messageResponse
+            ?.payload
+            ?.getJSONObject("usage")
+            ?.getInt("prompt_tokens")
+            ?: -1
 
     /**
-     * Adds a prompt to the message before sending it to the model. Not required for Open AI models,
-     * however it can be useful for providing additional context.
+     * Amount of tokens taken excluding the prompt.
      */
-    open var useToolInjectionPrompt = true
+    val Message.completionTokens: Int
+        get() = messageResponse
+            ?.payload
+            ?.getJSONObject("usage")
+            ?.getInt("completion_tokens")
+            ?: -1
+
+    /**
+     * The total tokens used including, [promptTokens], [reasoningTokens] and the response tokens.
+     */
+    val Message.totalTokens: Int
+        get() = messageResponse
+            ?.payload
+            ?.getJSONObject("usage")
+            ?.getInt("total_tokens")
+            ?: -1
+
+    /**
+     * Returns the amount of tokens used for reasoning if applicable.
+     */
+    val Message.reasoningTokens: Int
+        get() = messageResponse
+            ?.payload
+            ?.getJSONObject("usage")
+            ?.getJSONObject("completion_tokens_details")
+            ?.getInt("reasoning_tokens")
+            ?: -1
 
     /**
      * Specifies the location where the tool injection prompt should be placed.
      */
     open var toolInjectionPromptLocation = InjectionPromptLocation.BEFORE
+
+    open var additionalParameters: JSONObject? = null
 
     override fun establishConnection() { /* ... */ }
 
@@ -125,6 +157,8 @@ open class OpenAIModel(
 
         messageHistory.put(messageObject("user", prompt.toString()))
 
+        // TODO: Add chat messages to the Chat class messageHistory
+
         return sendMessage(messageHistory, activeTools, toolChoice)
     }
 
@@ -134,9 +168,16 @@ open class OpenAIModel(
         val json = JSONObject().apply {
             put("model", modelName)
             put("messages", messageHistory)
-            if (tools != null) {
+
+            tools?.let {
                 put("tool_choice", toolChoice)
                 put("tools", tools)
+            }
+
+            additionalParameters?.let {
+                for (key in it.keys()) {
+                    put(key, it[key])
+                }
             }
         }
 
@@ -146,6 +187,7 @@ open class OpenAIModel(
             .post(json.toString().toRequestBody("application/json; charset=utf-8".toMediaType())).build()
 
         val result = StringBuilder()
+        var jsonResponse: JSONObject? = null
         val latch = CountDownLatch(1)
 
         call(request) { response ->
@@ -177,8 +219,8 @@ open class OpenAIModel(
                 }
 
                 val responseBody = it.body?.string()
-                val jsonResponse = JSONObject(responseBody ?: "")
-                val choices = jsonResponse.getJSONArray("choices")
+                jsonResponse = JSONObject(responseBody ?: "")
+                val choices = jsonResponse!!.getJSONArray("choices")
                 val responseMessage = choices.getJSONObject(0).getJSONObject("message")
                 val messageContent = responseMessage.optString("content")
 
@@ -194,7 +236,7 @@ open class OpenAIModel(
 
         latch.await()
 
-        return ResponsePayload(result.toString())
+        return ResponsePayload(result.toString(), jsonResponse)
     }
 
     /**
@@ -226,7 +268,7 @@ open class OpenAIModel(
                 it.copy().apply {
                     // IMPROVE: Better Casting method instead of only allowing Strings
                     castTo(arguments.getString(name))
-                }
+                } 
             }.toTypedArray().toMutableList()
             val functionResponse = mappedFunction.response(mappedParameters)
             messageHistory.put(JSONObject().apply {
@@ -236,12 +278,13 @@ open class OpenAIModel(
                 put("tool_call_id", toolCalls.getJSONObject(i).getString("id"))
             })
         }
+
         return sendMessage(messageHistory, tools, toolChoice).response
     }
 
     override fun forceTool(vararg tools: ToolFunction<*>) {
         // Open AI limits forced tool calling to a single
-        // tool with a singed request. Therefore, we need
+        // tool with a single request. Therefore, we need
         // to ensure all the other functions are not currently
         // forced. It is still possible to have multiple tools
         // being forced and in this case, the last ToolFunction
@@ -255,6 +298,12 @@ open class OpenAIModel(
         super.handleCallException(exception, request, callback)
         // Obviously if it doesn't work once, try again!
         call(request, callback)
+    }
+
+    fun <T> parameter(name: String, value: T) {
+        additionalParameters = (additionalParameters ?: JSONObject()).apply {
+            put(name, value)
+        }
     }
 
     enum class InjectionPromptLocation {
